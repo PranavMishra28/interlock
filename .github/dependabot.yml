@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Root npm workspaces (single inherited lockfile). Grouped, low-volume.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Tested pair + dedupe override; bump by hand together (see AGENTS.md).
+      - dependency-name: "@copilotkit/*"
+      - dependency-name: "@ag-ui/*"
+      # No unreviewed major upgrades before or during the event.
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  # Actions stay SHA-pinned; Dependabot updates the SHA and version comment.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2

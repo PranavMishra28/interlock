@@ -1,0 +1,49 @@
+name: ci
+
+# Verifies the inherited starter + repository bootstrap. No deploys, no
+# package publishing, no paid API calls, no secrets. PRs from forks run with a
+# read-only token (pull_request, never pull_request_target).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  COPILOTKIT_TELEMETRY_DISABLED: "true"
+  CI: "true"
+
+jobs:
+  verify:
+    # Job name == required status check context on main. Keep it stable.
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # scope audit diffs against the recorded baseline commit
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Record toolchain
+        run: |
+          node --version
+          npm --version
+
+      - name: Install (inherited lockfile, exact)
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify
+        run: bash scripts/check.sh

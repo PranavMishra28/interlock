@@ -9,3 +9,20 @@ dist/
 .next/
 next-env.d.ts
 assets/fonts/
+
+# --- added for this repository (bootstrap, not upstream) ---
+# Every local env variant except the committed example.
+.env.*
+!.env.example
+# Credentials that must never enter Git or a browser bundle.
+*.pem
+*.key
+*-sa.json
+*service-account*.json
+gha-creds-*.json
+# Local tool state
+.trigger/
+.vercel/
+.playwright/
+playwright-report/
+test-results/
