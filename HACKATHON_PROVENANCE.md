@@ -93,4 +93,7 @@ No code from Irrevon, Eonfolk, or any employer repository.
 |---|---|---|
 | _empty until the event_ | | |
 
-Pre-event baseline tag: see `docs/READINESS.md` for the exact tag and commit.
+Pre-event baseline: annotated tag `pre-event-baseline`
+(`git rev-list -n1 pre-event-baseline` for the exact commit). Everything at or
+before that tag is inherited scaffolding or bootstrap; everything after it is
+event work and must be listed above.

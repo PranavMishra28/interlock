@@ -8,6 +8,7 @@ updates:
     open-pull-requests-limit: 3
     groups:
       npm-minor-patch:
+        patterns: ["*"]
         update-types: [minor, patch]
     ignore:
       # Tested pair + dedupe override; bump by hand together (see AGENTS.md).

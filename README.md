@@ -37,7 +37,7 @@ Requires Node 22 (`.nvmrc`) and npm 10.
 git clone https://github.com/PranavMishra28/interlock.git
 cd interlock
 npm ci                          # exact install from the inherited lockfile
-bash scripts/check.sh           # typecheck, tests, MCP round trip, web build, scope audit
+bash scripts/check.sh           # lockfile drift, typecheck, tests, MCP round trip, web build, scope audit, action pins
 ```
 
 To run the inherited web example locally:

@@ -95,9 +95,45 @@ is integrated.**
 Not in scope / not checked: OpenRouter, Exa, Ambiguous AI (starter sponsors not
 used by the plan; their env names remain in the inherited `.env.example`).
 
-## Repository controls (read back from GitHub)
+## Repository controls (read back from GitHub, 2026-09-11 ~12:40 PDT)
 
-_Filled in after repository creation; see the "Read-back" section below._
+Repository: https://github.com/PranavMishra28/interlock (public, created
+2026-09-11T19:32:40Z as a **new** repository; no existing private repo was
+made public). Default branch `main`.
+
+| Control | Set via | Read-back | State |
+|---|---|---|---|
+| Dependabot alerts | `PUT /vulnerability-alerts` | `GET` → 204 | enabled |
+| Dependabot security updates | `PUT /automated-security-fixes` | `{"enabled":true,"paused":false}` | enabled |
+| Dependabot version updates | `.github/dependabot.yml` | workflow "Dependabot Updates" active | enabled (weekly, grouped, majors ignored) |
+| Secret scanning | `PATCH security_and_analysis` | `secret_scanning: enabled` | enabled |
+| Push protection | same | `secret_scanning_push_protection: enabled` | enabled |
+| Non-provider (generic) secret patterns | same | stayed `disabled` after request | **unsupported on this plan/repo** — reported, not bypassed |
+| Private vulnerability reporting | `PUT /private-vulnerability-reporting` | `GET` → `true` | enabled |
+| Branch protection `main` | `PUT /branches/main/protection` | required check `verify` (strict, app 15368 = GitHub Actions); `allow_force_pushes: false`; `allow_deletions: false`; no PR review requirement; `enforce_admins: false` | enabled |
+| Merge settings | `PATCH repo` | `delete_branch_on_merge: true`, `allow_auto_merge: false` | set |
+
+`enforce_admins: false` is deliberate and documented: the solo maintainer keeps
+an admin escape hatch for a CI outage during the event; force-push and
+deletion remain blocked for everyone. Prefer PRs. Not silently weakened.
+
+### CI evidence
+
+- Run [34639428781](https://github.com/PranavMishra28/interlock/actions/runs/34639428781)
+  on `22b56e4b` (push to main): job `verify` **success**, 2 min 11 s. CI
+  toolchain: Node **v22.23.2**, npm 10.9.8 (local was v22.23.1; both satisfy
+  `.nvmrc` 22). Steps: checkout (pinned) → setup-node (pinned) → `npm ci` →
+  `bash scripts/check.sh`.
+- Dependabot immediately raised **19 alerts** on inherited transitive deps
+  (undici, postcss, qs, @opentelemetry/core) in the unchanged lockfile and
+  opened PR #1 "Bump postcss and next", which would move Next.js 15.5 → **16.x
+  (major)**. CI on that PR **failed as designed** (`scope-audit` flagged
+  `package.json`, `package-lock.json`, and a `tsconfig.json` rewritten by the
+  newer Next build). Closed with `@dependabot ignore this major version`.
+  Decision: inherited dependency bumps are an explicit event-time team
+  decision; nothing is deployed, and the affected packages are build/runtime
+  toolchain deps of the starter. Two Dependabot security jobs (qs, undici)
+  recorded update errors (transitive deps it could not bump alone).
 
 ## Access blockers requiring a human
 
@@ -121,6 +157,43 @@ an explicit maintainer instruction. First event commit: extend the allowlist
 in `scripts/scope-audit.sh` and add the start entry to
 `HACKATHON_PROVENANCE.md`.
 
-## Read-back (repository settings, CI, tag)
+## Pre-event baseline tag
 
-_Populated below once observed._
+Annotated tag **`pre-event-baseline`** marks the last pre-event commit on
+`main` (created after CI was green, branch protection applied, and the
+reviews below were repaired). Exact commit: `git rev-list -n1 pre-event-baseline`
+or the [tags page](https://github.com/PranavMishra28/interlock/tags). It is not
+a product release and will not be moved.
+
+## Reviews (2026-09-11, four separate read-only reviewers with bounded briefs)
+
+Reviewers were separate subagent runs with independent briefs; they did not
+see each other's output. Findings and what was done:
+
+| Review | Finding | Action |
+|---|---|---|
+| Eligibility/provenance | No product implementation on `main`; 0 blob mismatches vs upstream; stash/untracked clean; MIT preserved; no fabricated URLs/benchmarks | none needed |
+| Eligibility/provenance | Baseline tag referenced but not yet created; read-back section empty | tag created after repairs; this section filled |
+| Eligibility/provenance | `docs/` allowlist could hide code | scope audit now fails on any non-`.md`/`.png` file under `docs/` |
+| Eligibility/provenance | Dependabot branch with Next 16 bump | PR #1 closed with `@dependabot ignore this major version`; branch auto-deleted |
+| Security/authority | CI: no findings (read-only token, pins, no secrets, no injection) | — |
+| Security/authority | Action-pin check reported "pinned" when zero `uses:` lines matched | fails closed now; prints the count |
+| Security/authority | Pin check is format-only (any 40-hex SHA passes) | accepted; noted. Dependabot keeps SHAs current |
+| Security/authority | AGENTS.md dangerous ops missing `git add -f`, weakening checks/protection, publish commands | added |
+| Security/authority | PLAN §3–5 / SECURITY: no model write authority, no capability URLs to browser, no timeout-as-consent, OIDC absence stated honestly | — |
+| Compatibility | Scripts portable (GNU/BSD); `node-version-file` + npm cache fine; `fetch-depth: 0` needed and present; PR merge commits work | — |
+| Compatibility | Rename of an inherited file into an allowlisted dir could pass | `git diff --no-renames` |
+| Compatibility | Allowlist file entries prefix-matched (`check.sh.bak` would pass) | exact match for file entries, prefix only for `dir/` entries |
+| Compatibility | Dependabot group lacked `patterns` | `patterns: ["*"]` added |
+| Compatibility | `verify-mcp.mjs` 15 s stdio timeout is a low flake risk in CI | noted; inherited |
+| Simplicity/judge | Auth0 status BLOCKED vs DEFERRED across docs | DEFERRED everywhere |
+| Simplicity/judge | "`@copilotkit/runtime` v2" ambiguous | "1.70.x (`/v2` API)" |
+| Simplicity/judge | SUBMISSION pointed acceptance table to the wrong file | points to PLAN §7 |
+| Simplicity/judge | README `check.sh` one-liner omitted two stages | aligned |
+| Simplicity/judge | First task "transactional" ambiguous; not demo-facing | clarified in PLAN |
+| Simplicity/judge | Plan realism: steps 2, 5, 6–7 most likely to blow the day | smallest-honest-cut list added to PLAN |
+| Simplicity/judge | Suggested trimming AGENTS.md policy sections / PREP_ONLY repetition | not done: the prompt requires those sections; AGENTS.md is 78 lines |
+
+One repair cycle was needed; all negative tests (rename, sibling file,
+zero-`uses`, `docs/x.ts`) re-run and fail as intended. Blockers remaining: none
+in the repository; account blockers are listed above.
