@@ -35,17 +35,29 @@ if ! git cat-file -e "${BASELINE}^{commit}" 2>/dev/null; then
 fi
 
 # Tracked changes (committed or not) against the baseline, plus untracked files.
-changed="$( { git diff --name-only "$BASELINE"; git ls-files --others --exclude-standard; } | sort -u)"
+# --no-renames: a rename of an inherited file into an allowlisted dir must
+# still show the inherited path as deleted.
+changed="$( { git diff --name-only --no-renames "$BASELINE"; git ls-files --others --exclude-standard; } | sort -u)"
 
 violations=()
 while IFS= read -r path; do
   [ -z "$path" ] && continue
   ok=0
-  for prefix in "${ALLOW[@]}"; do
-    case "$path" in "$prefix"*) ok=1; break ;; esac
+  for allow in "${ALLOW[@]}"; do
+    case "$allow" in
+      */) case "$path" in "$allow"*) ok=1 ;; esac ;;   # directory prefix
+      *)  [ "$path" = "$allow" ] && ok=1 ;;            # exact file
+    esac
+    [ "$ok" = 1 ] && break
   done
   [ "$ok" = 1 ] || violations+=("$path")
 done <<<"$changed"
+
+# docs/ is allowlisted for prose and labeled screenshots only; code hidden
+# there is still code.
+while IFS= read -r path; do
+  [ -n "$path" ] && violations+=("$path (non-prose file under docs/)")
+done < <(git ls-files --cached --others --exclude-standard -- docs | grep -vE '\.(md|png)$' || true)
 
 total=$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l | tr -d ' ')
 echo "scope-audit: baseline ${BASELINE:0:12}, ${total} path(s) differ, ${#violations[@]} outside allowlist"

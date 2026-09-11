@@ -51,9 +51,13 @@ without a reviewed reason.
 - Change global git identity; commit as anyone but the configured repo user.
 - Commit `.env*` (except `.env.example`), keys, service-account JSON,
   transcripts, screenshots with private data, or Trigger.dev token URLs.
+  `git add -f` on an ignored file is never the answer.
 - Print secret values, dump the environment, or `set -x` around credentials.
-- Add deploy/publish steps, `pull_request_target`, secrets, or paid API calls
-  to CI. Unpinned actions fail `check.sh`.
+- Add deploy/publish steps (`npm publish`, `gcloud run deploy`, …),
+  `pull_request_target`, Actions secrets, or paid API calls to CI. Unpinned
+  actions fail `check.sh`.
+- Weaken `scripts/check.sh`, the `ALLOW` list in `scripts/scope-audit.sh`, CI
+  `permissions`, branch protection, or push protection to make something pass.
 - Provision cloud resources, enable billing, change IAM, or create credentials
   without explicit scope/budget approval from the maintainer.
 - Use non-personal (employer) accounts or code. No Irrevon/Eonfolk/employer imports.

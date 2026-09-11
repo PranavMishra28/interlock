@@ -30,7 +30,10 @@ step "Scope audit — inherited sources vs recorded baseline"
 run bash scripts/scope-audit.sh
 
 step "GitHub Actions — every third-party action pinned to a full commit SHA"
-unpinned=$(grep -rhoE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*[^#]+' .github/workflows | sed -E 's/^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*//' | grep -vE '@[0-9a-f]{40}[[:space:]]*$' || true)
-if [ -z "$unpinned" ]; then printf '  \033[32m✓\033[0m all actions pinned\n'; else printf '  \033[31m✗\033[0m unpinned: %s\n' "$unpinned"; FAILED=1; fi
+uses=$(grep -rhoE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*[^#]+' .github/workflows | sed -E 's/^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*//' || true)
+unpinned=$(printf '%s\n' "$uses" | sed '/^$/d' | grep -vE '@[0-9a-f]{40}[[:space:]]*$' || true)
+if [ -z "$uses" ]; then printf '  \033[31m✗\033[0m no `uses:` lines found under .github/workflows (fail closed)\n'; FAILED=1
+elif [ -z "$unpinned" ]; then printf '  \033[32m✓\033[0m all %s action(s) pinned\n' "$(printf '%s\n' "$uses" | sed '/^$/d' | wc -l | tr -d ' ')"
+else printf '  \033[31m✗\033[0m unpinned: %s\n' "$unpinned"; FAILED=1; fi
 
 if [ "$FAILED" = 0 ]; then printf '\n\033[1;32m✓ check.sh passed\033[0m\n'; else printf '\n\033[1;31m✗ check.sh failed\033[0m\n'; exit 1; fi

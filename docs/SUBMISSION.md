@@ -16,7 +16,7 @@ Inherited: [CopilotKit/agents-everywhere-starter-kit](https://github.com/Copilot
 
 | Criterion | Evidence to show | Where it will live | Status |
 |---|---|---|---|
-| Core Requirements & Functionality | one complete workflow: decision in thread → contract → approval → hold → promotion → verified revision → retired; run live, not mocked | demo video 0:20–1:30; `docs/READINESS.md` acceptance table with counts | not started |
+| Core Requirements & Functionality | one complete workflow: decision in thread → contract → approval → hold → promotion → verified revision → retired; run live, not mocked | demo video 0:20–1:30; acceptance cases in `docs/PLAN.md` §7, trial counts recorded in `docs/READINESS.md` during the event | not started |
 | Innovation & Theme Alignment | the *conversation + live environment* is the context; show what is lost without it (a standalone chatbox cannot bind to the pending release or hold the traffic) | video intro; README "why context matters" | not started |
 | Technical Execution & Integration | show a failure/cancellation path: edited-after-approval invalidation **or** flapping health resetting the window **or** expired hold; explain reconciliation of a lost response | video 1:30–1:50; deterministic tests | not started |
 | Usefulness & Agentic Experience | operator sees proposal, approves the exact revision, watches samples with timestamps, retains control (deny/cancel), gets an evidence trail | UI projection; video | not started |
