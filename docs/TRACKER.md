@@ -10,13 +10,13 @@ before compaction.
 
 ## Checkpoint
 
-- Inspected base: `main` at PR #9 merge
-  `b36e74c3c12d564b5299361a94ef73be2d9cc31d`.
-- Working branch: `ship-now` at `d83b3d1`. Post-merge work is authorized to go
-  straight to `main`, but `main` rejects a direct push: protection requires the
-  `verify` check and `ci.yml` runs it only on `main` pushes and pull requests,
-  so each change still lands through a short-lived branch and merge. Do not
-  weaken the check or the protection to avoid that step.
+- Inspected base: `main` at PR #10 merge
+  `caf6e75`, which landed `ship-now`.
+- Working branch: `main`. Post-merge work is authorized to go straight to
+  `main`, but `main` rejects a direct push: protection requires the `verify`
+  check and `ci.yml` runs it only on `main` pushes and pull requests, so each
+  change still lands through a short-lived branch and merge. Do not weaken the
+  check or the protection to avoid that step.
 - Last checkpoint: 2026-09-12 economical model and managed-channel
   configuration. The configured personal OpenAI project exposes the pinned
   `gpt-5.4-mini-2026-03-17` snapshot; runtime fallback, preflight, and
@@ -380,7 +380,9 @@ before compaction.
   branch step was refused by repository policy, so `demo-one-command` remains.
 - Brand mark checkpoint at clean committed
   `d83b3d17b1451f73b9d2b06f52c84743c00f9d79:9ed688e89fc73b4137d985758a6716ffc0f4561d`,
-  the current `ship-now` head. `d83b3d1` flattens `apps/web/src/app/icon.svg`
+  the `ship-now` head that PR
+  [#10](https://github.com/PranavMishra28/interlock/pull/10) then merged into
+  `main` as `caf6e75`. `d83b3d1` flattens `apps/web/src/app/icon.svg`
   only; it is a 490-byte balanced SVG that keeps its `viewBox` and
   `aria-label`. Recorded evidence had gone stale when that commit moved HEAD,
   and a concurrent `bash scripts/check.sh` run had already re-recorded this
