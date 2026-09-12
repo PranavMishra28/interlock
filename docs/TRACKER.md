@@ -164,6 +164,21 @@ before compaction.
   typechecks and tests, MCP stdio, production web build, scope/phase negatives,
   hook fixtures, canonical documentation links, workflow policy, and action
   pins. No paid API call or external mutation was made by this verification.
+- Control Room identity checkpoint
+  `748bd2d:eb9139c4386394a6ced8740a887c869f7ce079ee`: the supplied
+  near-touching-hands reference is distilled into one scalable SVG mark and
+  applied to the persistent product bar and application metadata. The premium
+  neutral visual tokens are scoped to Interlock's frame, workflow state is
+  adjacent to the active contract, loading reserves stable space, and the
+  global boundary indicator is neutral rather than a fabricated connectivity
+  signal. The chart threshold now derives from the actual contract instead of
+  the synthetic fixture's hard-coded `1`; one focused projection test raises
+  the web suite to 41 tests.
+  - Targeted web typecheck, all 41 tests, and production build passed. Browser
+    inspection at 1440×900 and 390×844 found one rendered H1, no retained
+    loading region after hydration, no horizontal overflow, a visibly labeled
+    synthetic source, and textual state/threshold/window/reset alternatives to
+    semantic color and the plot.
 - Live GCP evidence: dedicated personal project `interlock-508417` provisioned
   in `us-central1` inside the $0 Always Free envelope, isolated in the named
   gcloud configuration `interlock`. `checkout-v41` serves 100%; candidate
@@ -219,7 +234,7 @@ may be useful but cannot make the original criterion green.
 | P0-TRANSITION | — | lead only | organizer opening + explicit maintainer scope/budget | record opening evidence, authorization, final PREP_ONLY SHA; then commit `.hackathon-phase`, TRACKER, and provenance transition before probes or product work | `bash scripts/scope-audit.sh` | `dc42655:99fb15e` | DONE_IMPL | N/A |
 | CORE-1 | P0-TRANSITION | writer A | CAP-LOCAL | exact-revision contract, trusted owner/resource binding, persistence, hold/refusal, elapsed evidence, claim, retirement and retained receipt pass deterministic tests with labeled fixtures | task-owned contract/state/persistence tests, then `bash scripts/check.sh` | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
 | COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
-| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `ca2dc7c:c556474499785fda6be83ac2a1d01f2d6d469a74` | DONE_IMPL | NOT_REQUIRED |
+| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `748bd2d:eb9139c4386394a6ced8740a887c869f7ce079ee` | DONE_IMPL | NOT_REQUIRED |
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
 | SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `a78ea06` | DONE_IMPL (restart-safe registered approval) | ACCESS_REQUIRED |
 | MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `0c784c9` | DONE_IMPL | LIVE_VERIFIED |
