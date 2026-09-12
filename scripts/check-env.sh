@@ -69,6 +69,17 @@ if [ "${1:-}" = --doctor ]; then
   else
     slack=missing
   fi
+  # Reported apart from the platform IDs on purpose. These two are what the
+  # CLI attaches to the managed Channel, and without them Slack stays absent
+  # in Intelligence however complete the rest of the file looks. Collapsing
+  # them into one "SLACK_* configured" line reads as ready when ingress
+  # cannot start at all.
+  if [ -n "${INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_BOT_TOKEN:-}" ] &&
+     [ -n "${INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_SIGNING_SECRET:-}" ]; then
+    slack_credentials=configured
+  else
+    slack_credentials=missing
+  fi
   gcp=missing
   if [ -n "${GOOGLE_CLOUD_PROJECT:-}" ] &&
      [ -f "${HOME}/.config/gcloud/application_default_credentials.json" ]; then
@@ -76,8 +87,11 @@ if [ "${1:-}" = --doctor ]; then
   fi
   printf '%-22s %s\n' "OPENAI_API_KEY" "$openai"
   printf '%-22s %s\n' "COPILOTKIT_*" "$copilotkit"
-  printf '%-22s %s\n' "SLACK_*" "$slack"
+  printf '%-22s %s\n' "SLACK_* identities" "$slack"
+  printf '%-22s %s\n' "SLACK attach creds" "$slack_credentials"
   printf '%-22s %s\n' "GCP identity" "$gcp"
+  [ "$slack_credentials" = configured ] ||
+    printf '\nSlack attach credentials are absent, so the managed Channel cannot\nbind and no message can enter ingress. Confirm with: npm run channel:status\n'
   exit 0
 fi
 

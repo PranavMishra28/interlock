@@ -60,9 +60,28 @@ test("doctor reports configured/missing without values", () => {
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /OPENAI_API_KEY\s+configured/);
   assert.match(result.stdout, /COPILOTKIT_\*\s+missing/);
-  assert.match(result.stdout, /SLACK_\*\s+missing/);
+  assert.match(result.stdout, /SLACK_\* identities\s+missing/);
+  assert.match(result.stdout, /SLACK attach creds\s+missing/);
   assert.match(result.stdout, /GCP identity\s+missing/);
   assert.doesNotMatch(result.stdout, /sk-secret-must-not-print/);
+});
+
+test("doctor separates Slack identities from the attach credentials", () => {
+  // Platform IDs alone once read as a ready Slack column while the managed
+  // Channel had no adapter bound at all, so the two must never collapse.
+  const result = preflight(
+    [
+      "INTERLOCK_SLACK_WORKSPACE_ID=T000",
+      "INTERLOCK_SLACK_CHANNEL_ID=C000",
+      "INTERLOCK_OWNER_ID=U000",
+      "",
+    ].join("\n"),
+    ["--doctor"],
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /SLACK_\* identities\s+configured/);
+  assert.match(result.stdout, /SLACK attach creds\s+missing/);
+  assert.match(result.stdout, /managed Channel cannot\nbind/);
 });
 
 test(".env values are parsed as data, not shell code", () => {
