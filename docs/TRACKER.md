@@ -309,7 +309,11 @@ before compaction.
   `us-central1` were asserted, and independent read-back showed only
   `checkout-v41` at 100%; no promotion ran. The subsequent full `bash
   scripts/check.sh` passed on the same product tree, and `gitleaks git .
-  --redact --no-banner` found no leak in 49 commits.
+  --redact --no-banner` found no leak in 49 commits. Operator guidance follow-up
+  `76bf42f3745c7c30ae57a99c525a235f57e02f89:b033443589e4a1b0ca93a3b9938b624b2cb25491`
+  makes the empty-notes boundary, exact commands, surface ownership, and
+  expected authority-to-closure beats explicit; its walkthrough test,
+  documentation links, and full `bash scripts/check.sh` passed.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
