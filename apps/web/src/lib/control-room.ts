@@ -131,6 +131,13 @@ export function syntheticSnapshot(
           claimedAt: base + 56_000,
           uncertain: false,
         },
+        verification: {
+          observedRevision: "v41",
+          trafficPercent: 100,
+          healthValue: 0.42,
+          observedAt: base + 56_000,
+          verifiedAt: base + 57_000,
+        },
       },
       notice: "Verification mismatch: expected v42; observed v41.",
     };

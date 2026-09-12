@@ -24,6 +24,10 @@ test("required Control Room fixtures stay explicit and non-authoritative", () =>
   assert.equal(syntheticSnapshot("gap").workflow?.observation?.resets.at(-1)?.reason, "gap");
   assert.match(syntheticSnapshot("unauthorized").notice ?? "", /rejected/);
   assert.equal(syntheticSnapshot("intervention").workflow?.status, "NEEDS_INTERVENTION");
+  assert.equal(
+    syntheticSnapshot("intervention").workflow?.verification?.observedRevision,
+    "v41",
+  );
   assert.equal(syntheticSnapshot("retired").workflow?.receipt?.observedRevision, "v42");
 });
 
