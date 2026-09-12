@@ -55,6 +55,7 @@ export async function deliverAmbientMessage(
     allowedChannelId: string;
     coordinatorUrl: string;
     token: string;
+    request?: typeof fetch;
   },
 ) {
   const source = ambientSourceMessage(
@@ -64,7 +65,7 @@ export async function deliverAmbientMessage(
     config.allowedChannelId,
   );
   if (!source) return false;
-  const response = await fetch(`${config.coordinatorUrl}/v1/slack/events`, {
+  const response = await (config.request ?? fetch)(`${config.coordinatorUrl}/v1/slack/events`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${config.token}`,
@@ -76,7 +77,7 @@ export async function deliverAmbientMessage(
   if (!response.ok) {
     throw new Error(`Coordinator rejected Slack delivery (${response.status}).`);
   }
-  return response.status === 201;
+  return response.status === 201 ? source : null;
 }
 
 export async function reportListenerHeartbeat(config: {

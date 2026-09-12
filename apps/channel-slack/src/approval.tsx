@@ -9,6 +9,11 @@ import {
   defineChannelComponent,
   defineChannelTool,
 } from "@copilotkit/channels";
+import {
+  intentOutputSchema,
+  validateIntentOutput,
+  type IntentInput,
+} from "agent-core/interlock-intent";
 import { z } from "zod";
 import { isAllowedSlackActor } from "./interlock";
 
@@ -134,30 +139,33 @@ export function interlockProposal(config: {
   request?: typeof fetch;
 }) {
   return defineChannelTool({
-    name: "propose_interlock",
+    name: "resolve_interlock_intent",
     description:
-      "Persist and display the one revision-bound Interlock proposal. Call exactly once only for an explicit current hold decision with an explicit threshold and elapsed window. Never call for hypotheticals, negation, ambiguity, or missing values.",
-    parameters: z.object({
-      resourceId: z.string(),
-      candidateRevision: z.string(),
-      threshold: z.number().finite().nonnegative(),
-      windowMs: z.number().int().positive().max(3_600_000),
-    }),
+      "Return the bounded Intent decision exactly once. Abstention is valid and never creates authority.",
+    parameters: intentOutputSchema,
     async handler(
-      { resourceId, candidateRevision, threshold, windowMs },
+      raw,
       { thread, signal, platform },
     ) {
       if (platform !== "slack") return "Interlock proposals require Slack.";
-      if (
-        resourceId !== config.resourceId ||
-        candidateRevision !== config.candidateRevision
-      ) {
-        return "The requested resource or revision is not allowlisted; abstain.";
+      const state = await thread.state<{
+        interlockThreadRef?: string;
+        interlockIntent?: IntentInput;
+        interlockIntentResolved?: boolean;
+      }>();
+      if (!state?.interlockThreadRef || !state.interlockIntent) {
+        return "No bounded attributed Slack context is available; abstain.";
       }
-      const state = await thread.state<{ interlockThreadRef?: string }>();
-      if (!state?.interlockThreadRef) {
-        return "No attributed Slack thread is available; abstain.";
+      if (state.interlockIntentResolved) return "This attributed Intent is already resolved.";
+      const output = validateIntentOutput(raw, state.interlockIntent);
+      if (output.kind === "abstain") {
+        await thread.setState({ ...state, interlockIntentResolved: true });
+        return `Safely abstained: ${output.reason}.`;
       }
+      const selected = new Set(output.sourceDeliveryIds);
+      const boundedContext = state.interlockIntent.messages.filter(({ deliveryId }) =>
+        selected.has(deliveryId)
+      );
       const response = await (config.request ?? fetch)(
         `${config.coordinatorUrl}/v1/slack/proposals`,
         {
@@ -169,11 +177,14 @@ export function interlockProposal(config: {
           body: JSON.stringify({
             workspaceId: config.allowedWorkspaceId,
             channelId: config.allowedChannelId,
-            resourceId,
-            candidateRevision,
+            resourceId: output.resourceId,
+            targetUrl: output.targetUrl,
+            candidateRevision: output.candidateRevision,
             threadRef: state.interlockThreadRef,
-            threshold,
-            windowMs,
+            threshold: output.threshold,
+            windowMs: output.windowMs,
+            sourceDeliveryIds: output.sourceDeliveryIds,
+            boundedContext,
           }),
           signal: AbortSignal.timeout(2_000),
         },
@@ -201,6 +212,7 @@ export function interlockProposal(config: {
         platform: "slack",
         signal: signal ?? new AbortController().signal,
       });
+      await thread.setState({ ...state, interlockIntentResolved: true });
       return "Persisted and displayed the exact Interlock proposal. Stop without restating it.";
     },
   });
