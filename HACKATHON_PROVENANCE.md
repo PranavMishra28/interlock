@@ -108,6 +108,8 @@ commit—not a timestamp and not the old tag alone—is the event boundary.
 |---|---|---|
 | [PR #3](https://github.com/PranavMishra28/interlock/pull/3), merge `72dbc2163abbb86244549afd07461328030aa8e6` (substantive commits `43be666`, `851b745`) | audit, simplified topology prose, tracker/runbook, phase guard and generic negative tests | no |
 | [PR #4](https://github.com/PranavMishra28/interlock/pull/4), merge `f14ae7bfce9c5b6cbf6202a5dfc0e62db480fd24` | status-only read-back of PR #3 and remote checks | no |
+| [PR #5](https://github.com/PranavMishra28/interlock/pull/5), merge `bf547a37` (commit `1f437bb`) | allow six exact generic harness paths in the PREP_ONLY guard, so the following pull request can pass the trusted base check | no |
+| [PR #6](https://github.com/PranavMishra28/interlock/pull/6) | project hooks and fixtures, tree-bound check evidence, guard field-immutability and boundary pinning, product-first README, ambient Slack plan, Control Room design, capability-gated tracker DAG, runbook and readiness | no |
 
 ## Event work (fill only during an authorized BUILD_ACTIVE phase)
 

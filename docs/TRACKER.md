@@ -16,12 +16,15 @@ before compaction.
 - Last checkpoint: 2026-09-12 02:23 PDT.
 - Dirty ownership: lead owns preparation docs, generic guard/hook controls, and
   this tracker; no product writer is active.
-- Last verified: `bash scripts/check.sh` passed on the current working tree
-  (`f14ae7bf`:`274bd742`): inherited typecheck/tests/MCP stdio, web build, phase
-  guard negatives, hook fixtures, canonical doc links, workflow policy and
-  action pins. Inherited web smoke rendered locally with no model call;
-  gitleaks found no leak in history, changed paths, or the private guide.
-  The preparation PR and its remote `verify` run are still pending.
+- Last verified: `bash scripts/check.sh` passed on the current working tree:
+  inherited typecheck/tests/MCP stdio, web build, phase guard negatives, hook
+  fixtures, canonical doc links, workflow policy and action pins. Inherited web
+  smoke rendered locally with no model call; gitleaks found no leak in history,
+  changed paths, or the private guide. `main`'s guard was re-run against this
+  branch in a clean clone and reported 0 violations. Three bounded read-only
+  reviews (eligibility/provenance, security/harness, feasibility/design) found
+  no Interlock core implementation; their findings were repaired in one pass.
+  PR #5 (guard allowlist) merged with green `verify`; PR #6 carries the rest.
 - Blockers: official opening/maintainer authorization are unrecorded; personal
   Slack, OpenAI, and GCP capabilities are not live-verified; inherited
   dependency exposure blocks public/live use.
