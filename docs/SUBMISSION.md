@@ -39,23 +39,34 @@ synthetic rehearsal evidence as live Interlock functionality.
 - [ ] Video/social URLs are real before insertion.
 - [ ] Human explicitly authorizes publication and submission.
 
+The private test and recording must follow the same
+[canonical walkthrough](RUNBOOK.md#canonical-private-test-and-recorded-demo-walkthrough).
+Recording adds capture only. `.interlock/walkthrough-notes.md` is the sole
+confidential operator artifact; it remains ignored, off-screen, and unsubmitted.
+Before capture, hide `.env`, tokens, capability URLs, private Slack history,
+terminal history, browser developer tools/network panels, unrelated
+notifications, and personal account selectors. A missing live Slack gate blocks
+the integrated recording rather than authorizing synthetic substitution.
+
 ## Demo storyboard (≤120 seconds)
 
-1. **0:00–0:15 — context.** Show an ordinary unmentioned message in the one
-   authorized Slack incident channel, the prepared target, and synthetic
-   incident label. Explain what bounded context resolves.
+1. **0:00–0:15 — context.** Show the prepared target and one ordinary
+   unmentioned message in the authorized Slack incident channel. Explain Intent
+   and trusted Scope; the Control Room must say coordinator data, not synthetic.
 2. **0:15–0:35 — proposal and identity.** A decision yields a bounded proposal;
-   the trusted configured owner approves the exact revision with its button.
+   the trusted configured owner approves the exact revision with its button
+   (Authority).
 3. **0:35–0:55 — enforced hold.** Attempt the controlled promotion and show the
-   server adapter refusing it.
+   server adapter refusing it (Enforcement).
 4. **0:55–1:15 — interrupted recovery.** Show fresh samples, interrupt one, and
-   visibly reset the shortened labeled window.
+   visibly reset the shortened labeled window (Evidence).
 5. **1:15–1:38 — authorized continuation.** Recovery holds; exactly one claim
    promotes the prepared revision on the real selected target.
 6. **1:38–1:52 — verification.** Read back intended revision, effective
    routing, and fresh health; a failed check must remain failed.
 7. **1:52–2:00 — receipt and provenance.** Show retired active hold, retained
-   correlated receipt, inherited starter credit, and honest limitations.
+   correlated receipt (Closure), inherited starter credit, and honest
+   limitations.
 
 ## Draft placeholders
 

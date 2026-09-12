@@ -166,6 +166,204 @@ Run in this order; earlier success is not evidence for a later gate:
 Normal CI remains offline, secret-free, read-only, full-SHA pinned, and
 non-deploying. Existing starter tests do not prove Interlock behavior.
 
+## Canonical private test and recorded demo walkthrough
+
+Run this once before either walkthrough:
+
+```bash
+npm run walkthrough
+```
+
+It performs offline repository preflight and creates exactly one confidential
+operator artifact: `.interlock/walkthrough-notes.md`. The file starts empty,
+has user-only permissions, is ignored by Git, is never populated by the script,
+and is not submission evidence. If preflight fails, stop. The private test and
+recording use the ordered flow below unchanged; recording adds screen capture
+only.
+
+### 0. Confidentiality and recording boundary
+
+Before sharing or recording a screen, close `.env`, terminal history, browser
+developer tools/network panels, private Slack history, the notes artifact, and
+unrelated tabs. Hide notifications and verify no token, capability URL, private
+message, account selector, or personal identifier is visible. Use a clean
+terminal with only the commands below. Do not take screenshots, save traces, or
+create another evidence file by default. Stop if any secret or unrelated
+notification appears; rotate an exposed credential before retrying.
+
+General idea, in six primitives:
+
+1. **Intent:** an ordinary message states the exact candidate and sustained
+   health condition.
+2. **Scope:** trusted configuration narrows it to one workspace, channel,
+   resource, target, and revision.
+3. **Authority:** only the configured Slack owner can approve that exact
+   proposal revision.
+4. **Enforcement:** the coordinator's server adapter refuses promotion while
+   the approved hold is active.
+5. **Evidence:** fresh target observations must satisfy one continuous window;
+   unhealthy, stale, gap, and restart evidence resets it.
+6. **Closure:** one claim dispatches once, independent read-back verifies
+   revision/routing/health, then a correlated receipt remains.
+
+### 1. Local synthetic rehearsal
+
+In terminal A:
+
+```bash
+npm run demo --workspace web -- --reset
+```
+
+In terminal B:
+
+```bash
+INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web
+```
+
+Open `http://localhost:3100`. Expected: the page says **TEST INPUT —
+SYNTHETIC**, begins in an unhealthy `ACTIVE_HOLD`, records synthetic recovery,
+permits one continuation after the six-second window, and ends with a retained
+receipt for `v42`, 100% routing, and health `0.1`. This proves the real local
+store/coordinator/supervisor control flow only. It proves no Slack, model, or
+Cloud Run behavior. Stop and mark the walkthrough failed if the source label is
+missing, the hold does not remain closed while unhealthy, the receipt differs,
+or any service error is hidden. `Ctrl-C` only these two processes before retry.
+
+### 2. Control Room review
+
+Without changing product state, verify target and exact revision, configured
+owner and approved revision, current/next state, independent coordinator and
+Slack connectivity, threshold/window/elapsed time, reset/gap markers, lifecycle
+rail, and expected-versus-observed receipt. Expected: semantic text communicates
+each fact without relying on color, and no horizontal scroll is needed at the
+recording size. Stop for stale/unavailable evidence, a mismatched revision,
+ambiguous next action, clipped content, or a false connectivity claim.
+
+### 3. Live capability gate
+
+This stage is blocked until Slack is genuinely available. It is never replaced
+by the synthetic rehearsal. After the operator has placed fresh credentials in
+the approved ignored configuration, run:
+
+```bash
+npm run doctor
+npm run channel:status
+```
+
+Expected: doctor reports OpenAI, CopilotKit, Slack, and GCP identity configured;
+the managed Channel reports online; the configured workspace/channel/owner IDs
+are the intended personal test identities; compromised prior Slack tokens are
+revoked; target read-back is `checkout-v41` at 100%, `checkout-v42` is prepared
+at 0%, and health is `0.1`. Confirm the dependency risk acceptance in
+[READINESS](READINESS.md#dependency-security-gate). Stop on any missing,
+stale, wrong-account, wrong-target, non-loopback, or hosted/public state. These
+commands are live capability checks, not part of offline preflight.
+
+### 4. Live Slack-to-receipt flow
+
+Only after stage 3 passes, ensure no prior operation is uncertain, remove only
+the dedicated walkthrough database from a stopped coordinator, and fault the
+prepared target:
+
+```bash
+rm -f .interlock/walkthrough.db .interlock/walkthrough.db-wal .interlock/walkthrough.db-shm .interlock/walkthrough.db.lock
+node --env-file=.env scripts/walkthrough.mjs --fault on
+```
+
+Start terminal A, then B, then C:
+
+```bash
+INTERLOCK_DB_PATH=.interlock/walkthrough.db npm run coordinator --workspace web
+npm run dev:slack
+npm run dev:web
+```
+
+Expected: all listeners bind loopback, the Slack Channel is online, and the
+Control Room reports coordinator data with both coordinator and Slack connected.
+Stop if enforcement is idle, the Channel is degraded, either heartbeat is
+missing, or the page says synthetic.
+
+In the one authorized channel, send this as a brand-new, unmentioned top-level
+message (replace no values during the later recording):
+
+```text
+Hold the prepared checkout candidate until health stays at or below 0.5 for 10 continuous seconds, then promote that exact candidate.
+```
+
+Expected: one attributed proposal appears for the configured resource and exact
+candidate revision. A wrong or duplicate proposal, bot loop, invented value, or
+missing proposal is a failed run. The configured owner—and nobody else—clicks
+the exact-revision approval button. An unauthorized actor must remain rejected;
+do not use that negative control in the ≤120-second capture unless already
+verified privately.
+
+While the target is still unhealthy, run:
+
+```bash
+node --env-file=.env scripts/walkthrough.mjs --refuse
+```
+
+Expected: HTTP 409 refusal and an active hold; no target traffic movement.
+Recover for about two seconds, interrupt recovery until the Control Room reset
+count increases, then recover for the complete labeled window:
+
+```bash
+node --env-file=.env scripts/walkthrough.mjs --fault off
+```
+
+Wait until Control Room elapsed time reaches about two seconds, then:
+
+```bash
+node --env-file=.env scripts/walkthrough.mjs --fault on
+```
+
+Wait until the reset count increases, then:
+
+```bash
+node --env-file=.env scripts/walkthrough.mjs --fault off
+```
+
+Expected: the first partial window never authorizes dispatch; the interruption
+adds a reset; the final continuous window causes exactly one claim and dispatch.
+The Control Room must then read back `checkout-v42`, 100% effective routing,
+fresh health `0.1`, `RETIRED`, and one retained receipt. Any timeout,
+`NEEDS_INTERVENTION`, mismatch, duplicate dispatch, or uncertain response is a
+failure and must remain visible.
+
+### 5. Pass, reset, retry, and recording
+
+Pass only when every item is true:
+
+- [ ] confidentiality boundary held; the sole notes artifact stayed off-screen;
+- [ ] synthetic rehearsal completed and remained visibly synthetic;
+- [ ] live gate used fresh intended accounts and an online Slack Channel;
+- [ ] one ambient message produced one exact scoped proposal;
+- [ ] only the configured owner approved its exact revision;
+- [ ] the held operation returned HTTP 409 without traffic movement;
+- [ ] interrupted recovery visibly reset the continuous window;
+- [ ] final recovery caused exactly one dispatch;
+- [ ] read-back showed `checkout-v42`, 100% routing, fresh health `0.1`;
+- [ ] workflow retired with one correlated receipt and no hidden failure.
+
+If failure occurs before dispatch and external read-back still proves
+`checkout-v41` at 100%, stop the three owned processes, turn the fault off, then
+repeat from the dedicated-database removal. After dispatch or any uncertain
+effect, do **not** delete state or retry: retain the database, read the target,
+and resolve `NEEDS_INTERVENTION` first.
+
+After a 100% private pass, prepare the identical recording by explicitly routing
+the prepared service back to the known baseline, confirming read-back, stopping
+the coordinator, and clearing only the dedicated walkthrough database:
+
+```bash
+gcloud run services update-traffic checkout --to-revisions checkout-v41=100 --project interlock-508417 --region us-central1
+```
+
+Then repeat stages 3–4 unchanged with capture enabled. The
+[submission storyboard](SUBMISSION.md#demo-storyboard-120-seconds) is the
+≤120-second shot list. If the live gate or private pass is incomplete, do not
+record or claim the integrated demo.
+
 ## Offline synthetic rehearsal
 
 This rehearsal is available before Slack access and does not satisfy
