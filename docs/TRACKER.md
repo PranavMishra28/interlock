@@ -91,10 +91,17 @@ before compaction.
   account, paid call, or deployment was used.
 - Model/channel checkpoint: targeted agent-core intent/state and environment
   checks passed (59 tests), followed by agent-core typecheck and canonical
-  documentation links. Full `bash scripts/check.sh` then passed on tree
-  `10556c9:dfc73573c895518cdaa88c8b57b7187d0ecb416a`. The only OpenAI request
-  was a model-list read (no generation); `gpt-5.4-mini-2026-03-17` was present.
-  No model spend was incurred.
+  documentation links. Full `bash scripts/check.sh` then passed on the clean
+  committed tree `cd8e4ff:8694e55177135b76a534c24444a31e1fbef6059b`. The only
+  OpenAI request was a model-list read (no generation);
+  `gpt-5.4-mini-2026-03-17` was present. No model spend was incurred.
+- Slack credential incident 2026-09-12: a bot token and an app-level token were
+  pasted into the assistant transcript and are therefore compromised. Neither
+  was used, stored, or written to any file; a working-tree and history scan
+  found only inherited documentation that mentions the `xapp-` prefix, no token
+  values. Both must be revoked and the bot token rotated by reinstalling the
+  app before CAP-SLACK can proceed. The managed Channel path needs a bot token
+  and signing secret only; it never uses an app-level token or Socket Mode.
 - Live-gap audit correction: the coordinator process is HTTP + SQLite only. It
   never observes health, never refuses a real promotion attempt, never
   constructs `CloudRunAdapter`, and never continues autonomously; `observe`,
@@ -110,8 +117,9 @@ before compaction.
   `{value, observedAt}` contract the adapter requires; an unauthenticated
   `POST /fault` is refused with 403 while a tokened call genuinely degrades
   health to 0.9 and recovers to 0.1. The teardown ledger is in READINESS.
-- Blockers: Slack channel install missing. OpenAI live eval is authorized but
-  waits for the dependency gate and bounded model path to be wired.
+- Blockers: Slack channel install missing, and the pasted tokens must be
+  revoked/rotated before any live Slack attempt. OpenAI live eval is authorized
+  but waits for the dependency gate and bounded model path to be wired.
   Coordinator process does not yet observe/enforce/continue. Approval cards
   do not survive listener restart. Inherited dependency exposure still blocks
   public hosting.
