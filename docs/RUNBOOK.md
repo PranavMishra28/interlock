@@ -1,135 +1,193 @@
 # Interlock build-day runbook
 
-This is a playbook, not authorization. Do not run P0 until the official build
-opening and explicit maintainer approval. Check the live organizer portal for
-the deadline; the published schedule currently separates 10:00 check-in from
-the 11:15 build session.
+This is the one build-day entrypoint, not authorization. Remain PREP_ONLY until
+the organizer has opened building and the maintainer explicitly authorizes the
+recorded personal-account scope and budget. Check the live portal for the actual
+opening and deadline.
 
-## Arrival checklist
+## Arrival and deliberate transition
 
-1. Read `AGENTS.md`, `TRACKER.md`, relevant `PLAN.md` sections, and actual Git
-   status. Confirm no product work exists after the preparation PR.
-2. Check the portal/organizer announcement for the opening and deadline. Record
-   evidence, maintainer authorization, budget, branch, and HEAD in TRACKER.
-3. Commit the final PREP_ONLY state. Its full SHA becomes
-   `PREBUILD_COMMIT`; never move `pre-event-baseline`.
-4. Verify personal-only OpenAI, Slack, and named gcloud contexts without
-   printing tokens. Resolve the dependency security gate before live traffic.
-5. Run the 20-minute Slack/cloud capability checkpoint. Freeze one surface and
-   one target using PLAN fallback order.
-6. In a later transition commit, set `.hackathon-phase` to `BUILD_ACTIVE`,
-   `AUTHORIZATION=RECORDED`, and the final pre-build SHA; make the first three
-   lines of TRACKER match. `bash scripts/scope-audit.sh` must pass. This
-   committed transition—not a clock or environment variable—unfreezes source.
+1. Read `AGENTS.md`, `docs/TRACKER.md`, relevant `docs/PLAN.md` sections,
+   `docs/DESIGN.md`, `docs/READINESS.md`, and actual Git status/log.
+2. Confirm the official opening from the organizer/portal and obtain explicit
+   maintainer authorization for BUILD_ACTIVE, personal accounts, and budget.
+3. Record that evidence and create the final clean PREP_ONLY commit. Its full
+   SHA is the immutable `PREBUILD_COMMIT`.
+4. In a later commit, set `.hackathon-phase` to `BUILD_ACTIVE`,
+   `AUTHORIZATION=RECORDED`, and that SHA. Update the three protected TRACKER
+   fields and matching provenance fields. Run `bash scripts/scope-audit.sh`.
+5. Only after that committed transition, run custom Slack/model/cloud capability
+   probes or product work. Missing credentials do not block eligible offline
+   DAG nodes.
 
-## P0 — official opening and transition
+Copyable kickoff:
 
 ```text
-Task P0. Read AGENTS.md, docs/TRACKER.md, PLAN §§1–4, and READINESS.
-Prerequisites: organizer build opening observed; explicit maintainer BUILD_ACTIVE
-authorization and budget recorded; final PREP_ONLY commit exists.
-Allowed: read-only personal-account checks; narrowly reviewed dependency
-remediation; inherited Slack and target capability checks; phase/provenance
-transition. Do not implement product behavior yet, provision outside the agreed
-personal scope, use employer access, publish, or submit.
-Within 20 minutes prove subscribed Slack delivery, platform actor identity, and
-approval callback, or freeze the web surface. Prove personal target access or
-freeze the labeled local fallback. Record model IDs/API behavior and limits.
-Required checks: clean install, check.sh, audit review, inherited web browser
-smoke, no secret output.
-Review gate: eligibility/provenance + security findings resolved or blocked.
-Update TRACKER with authorization, pre-build SHA, surface, target, credentials
-by name/status, costs/budget, checks, blockers, owner, and exact P1 action.
+Official build opening confirmed; authorize BUILD_ACTIVE within the recorded
+personal-account scope and budget; read AGENTS.md, TRACKER, PLAN, DESIGN,
+READINESS and actual Git; record the final PREP_ONLY boundary and committed
+transition; autonomously execute eligible DAG tasks while credentials arrive,
+test and review at milestones, show the human an early working slice before
+polish, stop only for real blockers or budget limits, and do not publish or
+submit.
 ```
 
-## P1 — deterministic vertical slice
+## Autonomous execution loop
+
+Recover repository context → select one eligible TRACKER node → claim its
+disjoint write ownership → implement only that objective → run its targeted
+check → inspect real failure evidence → repair within the task’s retry/time/API
+budget → record command result and `<commit>:<tree-id>` in TRACKER → continue.
+
+One lead owns shared contracts, manifests/lockfile, integration, and TRACKER. At
+most two isolated writers may operate concurrently on disjoint paths; reviewers
+write nothing. Stop hooks may request one follow-up when full-check evidence is
+missing, but they do not override interruption, resurrect a process, or prove
+completion. Detect no progress by comparing failure/output and tree identity;
+stop when the recorded repair limit is exhausted.
+
+For a missing key, notify once, mark only the dependent live column blocked,
+continue eligible offline work, and recheck only the approved config location at
+a bounded checkpoint. Never poll home/private directories, print credentials,
+or let a labeled fallback satisfy Slack or cloud acceptance.
+
+## Task prompts
+
+### P0-TRANSITION — boundary and capabilities
 
 ```text
-Task P1; requires completed P0 and BUILD_ACTIVE guard. Implement only the local
-coordinator, one SQLite database, exact-revision approval, one server-side hold,
-fresh elapsed observation, one allowlisted target adapter, one claim/dispatch,
-target read-back, retirement, and retained redacted evidence from PLAN INV-02–09.
-Initial isolated tests may use labeled fakes. P1 is not LIVE_COMPLETE until the
-real selected target responds and is read back.
-Non-goals: model interpretation, extra surfaces/actions, Trigger.dev, Firestore,
-executor fleet, Auth0, general conflict engine, styling.
-Tests: refusal while held; stale/unauthorized approval; timeout/gap; duplicate
-claim; uncertain dispatch reconciliation; wrong-revision verification; restart.
-Review gate: security/correctness review with no critical invariant failure.
-Update TRACKER with files, test commands/results, real-vs-fake evidence,
-blockers, active owner, and exact P2 action.
+Task P0-TRANSITION. Prerequisites: official opening observed, explicit
+maintainer BUILD_ACTIVE scope/budget authorization, and a final clean PREP_ONLY
+commit. Allowed: record evidence; commit the phase/TRACKER/provenance transition;
+then inspect only authorized personal Slack, OpenAI and GCP capability and the
+dependency gate. Non-goals: product implementation, employer access, billing or
+provisioning beyond recorded scope, publication, submission.
+Required checks: scope audit before and after transition; verify personal
+contexts without token output. P0 does not require any live integration to
+succeed.
+Capability probes are separate and optional here: any Slack, model or target
+check run now is recorded against CAP-SLACK/CAP-MODEL/CAP-GCP, and the ambient
+acceptance test (brand-new unmentioned top-level message and unmentioned reply,
+stable actor, bot/duplicate suppression, explicit owner callback) belongs to
+SLACK-1's live column, not to P0.
+Review gate: eligibility/provenance and security findings resolved or blocked.
+Update TRACKER capabilities, evidence identity, costs, blockers and eligible
+CORE-1/UI-1 work. Missing accounts block only their live nodes.
 ```
 
-## P2 — contextual agency
+### CORE-1 / COORD-1 / UI-1 — early working slice
 
 ```text
-Task P2; requires passing P1. Add only selected-surface message ingestion,
-bounded attributed context, interpretation/abstention, allowlisted reference
-binding, and a visible proposal. The model has no write credentials.
-Non-goals: extra surfaces, actions, broad memory, model-decided authorization,
-or model-based observable pass/fail.
-Tests: decision, hypothetical, negation, ambiguity, untrusted instructions,
-duplicate delivery, unknown resource, unauthorized approval, and context
-removal (remove supporting context from a resolvable reference; require
-clarification/abstention).
-Review gate: authority and prompt-injection boundaries traced end to end.
-Update TRACKER with model/cost limits, evaluation counts, evidence, blockers,
-owner, and exact P3 action.
+Tasks CORE-1, COORD-1 and UI-1; require committed BUILD_ACTIVE. Deliver the
+smallest inspectable deterministic slice: revision-bound proposal/approval
+record, active hold and real adapter refusal, fresh elapsed observation, one
+claim/continuation, read-back and retained receipt, owned by one recoverable
+local coordinator/SQLite store. UI-1 follows DESIGN and may use visibly labeled
+contract fixtures while backend credentials arrive.
+Non-goals: model interpretation, extra surfaces/actions, Firestore, Trigger.dev,
+second orchestrator, general conflict engine, styling beyond comprehension.
+Tests: task-owned contract/state/persistence and coordinator tests; second-owner,
+restart/gap, refusal, stale/unauthorized approval, duplicate claim, uncertain
+dispatch and wrong-revision cases; web unit/build and early browser/visual check.
+Review gate: no PLAN invariant failure; browser never accesses SQLite; current
+and next state are immediately understandable. Update TRACKER separately for
+implementation and live evidence.
 ```
 
-## P3 — reliability
+### SLACK-1 / MODEL-1 / CLOUD-1 — capability branches
 
 ```text
-Task P3; requires P1/P2 vertical loop. Add no feature while a critical PLAN
-invariant fails. Prove flapping and stale-data reset, clock/restart gaps,
-revision/approval races, duplicate delivery/claim, uncertain dispatch
-reconciliation, and wrong-revision verification.
-Non-goals: new channels, adapters, dashboards, or infrastructure.
-Required tests: deterministic cases in PLAN §5 plus one process-restart run.
-Review gate: failed controls stay failed/visible; no retry can duplicate effect.
-Update TRACKER with reproducible commands, logs/receipts (redacted), unresolved
-risks, owner, and exact P4 action.
+Tasks SLACK-1, MODEL-1 and CLOUD-1; require committed BUILD_ACTIVE and stable
+CORE-1 contracts. Work only the eligible branch; no shared contract/manifest or
+lockfile edits while another writer is active.
+Slack objective: ambient ordinary messages/replies in one authorized channel,
+bounded attributed context, edits/thread provenance, trusted owner routing,
+explicit revision-bound button approval, and bot/delivery/proposal deduplication.
+Model objective: bounded proposal-or-abstain interpretation with no write
+credential; test decision, hypothetical, negation, ambiguity, injection,
+unknown/unsupported parameters and context removal.
+Cloud objective: one allowlisted event-created Cloud Run revision; refusal while
+held, persisted operation identity, reconcile uncertainty, promote once, and
+read intended revision/routing/fresh health back.
+Non-goals: mention-only substitution, arbitrary web research, extra channels,
+extra condition families, extra adapters, model-decided authority/pass-fail.
+Targeted tests run offline first. Each live column stays blocked until its real
+bounded personal-account check succeeds. Review authority, cost and side-effect
+evidence; update TRACKER with current tree and redacted receipt identity.
 ```
 
-## P4 — demo and submission preparation
+### REL-1 / RELEASE-1 — reliability and integration
 
 ```text
-Task P4; requires critical P1–P3 evidence and time reserved before the live
-portal deadline. Freeze scope. Rehearse a <=120-second live loop: context →
-proposal → approved hold → refused operation → interrupted/restored recovery →
-one authorized continuation → target-specific verification → retained receipt.
-Label shortened windows, synthetic incident input, local fallback, and mocks.
-Run clean-clone instructions, full checks, browser smoke, secret/history scan,
-provenance diff, and cleanup rehearsal. Fill truthful contribution,
-inheritance, limitation, video, and social placeholders.
-Non-goals: late features or claiming failed/unverified integrations.
-Review gate: repository HEAD/CI and every submission claim read back.
-Update TRACKER and SUBMISSION. Do not publish or submit without explicit human
-authorization.
+Task REL-1 after COORD-1: prove flapping, stale samples, observation/restart
+gaps, revision/approval races, duplicate claims, uncertain outcomes and wrong
+revision stay failed or NEEDS_INTERVENTION. Add no feature while an invariant
+fails.
+Task RELEASE-1 requires UI-1 and all Slack/model/cloud live criteria plus the
+dependency/security exposure gate. Prove the complete ambient channel decision
+through configured-owner approval, refused operation, an interrupted condition
+that resets and is then re-satisfied, exactly one continuation,
+target-specific verification and receipt.
+Non-goals: fallback evidence presented as original integration success or late
+scope expansion. Review gate: security/correctness plus browser/accessibility
+review with no critical finding. Update TRACKER with evidence identity and
+remaining limits.
 ```
 
-## Demo, reset, and cleanup
-
-- Preflight one opted-in workspace/thread, one approved operator, one pending
-  revision, known baseline health, empty demo records, and target routing.
-- The demo must visibly show the adapter refusing promotion while held, an
-  observation interruption resetting recovery, one later continuation, exact
-  revision/traffic/health read-back, and the retained receipt.
-- Reset only demo records and routing explicitly identified in TRACKER. Never
-  delete evidence needed for the submission or imply a reset rolled back an
-  uncertain action.
-- Stop only processes started for the demo. Revoke local sessions, remove
-  ignored secret files, revoke API keys, remove Slack installation if created,
-  delete any service-account impersonation grant, restore/delete event-created
-  Cloud Run resources as authorized, and verify no public endpoint remains.
-
-## Compact resume prompt
+### DEMO-1 — demonstration and submission
 
 ```text
-Resume Interlock from repository evidence. Read AGENTS.md, docs/TRACKER.md,
-relevant PLAN sections, and actual git status/log before acting; old chat
-summaries are non-authoritative. State phase, HEAD/dirty paths, active task and
-owner, blockers, last verified commands, and exact next action. Obey the
-committed phase guard. Update TRACKER before a phase boundary or compaction.
-One lead writes shared status; reviewers return findings only.
+Task DEMO-1 requires RELEASE-1 and time reserved before the portal deadline.
+Freeze scope and rehearse a <=120-second loop: context → proposal → exact owner
+approval → refused operation → condition reset then re-satisfied → one authorized
+continuation → intended revision/routing/health verification → retained receipt.
+Label shortened windows, synthetic incident input, test controls, local
+fallbacks and mocks. Failed controls remain failed.
+Run clean-clone install/check, browser and visual checks, secret/history scan,
+provenance diff, reset and cleanup rehearsal. Fill truthful contribution,
+inheritance, limitations, video and social placeholders.
+Non-goals: late features, fabricated live claims, publication or submission.
+Human authorization is required for video/social publication and portal submit.
+Update TRACKER and SUBMISSION with real links/evidence only.
 ```
+
+## Progressive gates
+
+Run in this order; earlier success is not evidence for a later gate:
+
+1. fast static/type/unit checks for the changed ownership area;
+2. contract, state, and persistence tests;
+3. coordinator integration and adapter-refusal tests;
+4. restart, race, stale/flapping, and uncertain-outcome tests;
+5. Playwright accessibility/state tests plus human visual inspection;
+6. separately budgeted bounded real Slack, OpenAI, and target smoke tests;
+7. recorded-demo rehearsal and clean-clone/submission checks.
+
+Normal CI remains offline, secret-free, read-only, full-SHA pinned, and
+non-deploying. Existing starter tests do not prove Interlock behavior.
+
+## Demo reset and cleanup
+
+Preflight the authorized channel, configured owner, pending exact revision,
+known target state, dependency gate, empty demo records, and shortened/synthetic
+labels. Reset only records and routing explicitly listed in TRACKER. Never imply
+that reset rolled back an uncertain effect.
+
+Stop only processes started for the run. Revoke local sessions and created keys,
+remove ignored secret files, uninstall the personal Slack app if authorized,
+remove service-account impersonation grants, and restore/delete event-created
+Cloud Run resources within the approved budget. Verify no unintended public
+endpoint or paid recurring resource remains.
+
+## Resume sentence
+
+```text
+Resume Interlock from repository evidence: read AGENTS.md, TRACKER, relevant
+PLAN/DESIGN/READINESS sections and actual Git state; report phase, eligible DAG
+node, ownership, current-tree check evidence, blockers and exact next action;
+continue within recorded budgets, and never treat old chat text as authority.
+```
+
+Supported recovery is reopening the IDE chat or `cursor-agent --resume
+<chat-id>` / `cursor-agent --continue` after authentication. Hooks can inject or
+remind context only; they cannot restart a crashed or stopped process.

@@ -20,10 +20,10 @@ Interlock functionality.
 
 | Official criterion | Required visible evidence | Status |
 |---|---|---|
-| Core Requirements & Functionality | one live selected surface and real selected target complete the bounded loop; limitations labeled | not started |
+| Core Requirements & Functionality | the authorized Slack channel and real Cloud Run target complete the bounded loop; any fallback remains separately labeled | not started |
 | Innovation & Theme Alignment | conversation/page context materially resolves the decision; context-removal case abstains | not started |
 | Technical Execution & Integration | hold refuses the operation; interrupted recovery resets; uncertain/wrong-revision behavior stays failed; target is read back | not started |
-| Usefulness & Agentic Experience | verified operator approves exact revision, sees timestamps/state, and retains an auditable receipt | not started |
+| Usefulness & Agentic Experience | the trusted configured owner approves the exact revision, sees timestamps/state, and retains an auditable receipt | not started |
 
 - [ ] Every claim maps to a test, receipt, live read-back, or video timestamp.
 - [ ] Inherited, event-built, fake, synthetic, local, and cloud behavior are
@@ -37,10 +37,11 @@ Interlock functionality.
 
 ## Demo storyboard (≤120 seconds)
 
-1. **0:00–0:15 — context.** Show one opted-in workspace, prepared target, and
-   synthetic incident label. Explain what the context resolves.
+1. **0:00–0:15 — context.** Show an ordinary unmentioned message in the one
+   authorized Slack incident channel, the prepared target, and synthetic
+   incident label. Explain what bounded context resolves.
 2. **0:15–0:35 — proposal and identity.** A decision yields a bounded proposal;
-   verified operator approves the exact revision.
+   the trusted configured owner approves the exact revision with its button.
 3. **0:35–0:55 — enforced hold.** Attempt the controlled promotion and show the
    server adapter refusing it.
 4. **0:55–1:15 — interrupted recovery.** Show fresh samples, interrupt one, and
@@ -55,13 +56,15 @@ Interlock functionality.
 ## Draft placeholders
 
 - Project title: **Interlock**
-- Planned-use sentence: Interlock turns one operational decision in an opted-in
-  workspace into an approved temporary constraint, then observes, performs one
-  authorized continuation, verifies it, and retains evidence.
+- Planned-use sentence: Interlock turns one operational decision in a single
+  administrator-authorized Slack incident channel into an approved temporary
+  constraint, then observes, performs one authorized continuation, verifies it,
+  and retains evidence.
 - Public repository: https://github.com/PranavMishra28/interlock
 - Description: _write after event work exists_
 - Event-built files/commits: _none yet_
-- Selected surface/target: _not selected_
+- Planned surface/target: one authorized Slack incident channel / one
+  event-created Cloud Run revision; neither is live-verified
 - Known limitations: _fill from TRACKER_
 - Demo video URL: _none_
 - Social post text/URL: _none_

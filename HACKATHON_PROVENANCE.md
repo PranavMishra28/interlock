@@ -6,7 +6,10 @@ its core functionality built during the event; templates, libraries, prompts,
 and starter code may be reused if the team identifies inherited vs event-built
 work. This file is that identification. It is kept current across the event.
 
-## Status: PREP_ONLY (as of 2026-09-12 before the official build opening)
+## Status: PREP_ONLY
+
+Build authorization: UNRECORDED
+Final pre-build commit: UNRECORDED
 
 Nothing in this repository implements Interlock. Everything here is either
 verbatim inherited starter code or generic repository bootstrap (CI, docs,
@@ -42,7 +45,7 @@ same baseline on every CI run.
 - `package.json`, `package-lock.json`, `.nvmrc`, `.env.example`, `LICENSE`, `.gitignore` (later extended, see below)
 - `packages/agent-core/**` — shared agent factory (`BuiltInAgent`), model resolver, prompt, MCP capability wiring
 - `apps/web/**` — the selected **web template** (Next.js 15 + CopilotKit React + runtime route)
-- `apps/channel-slack/**`, `apps/local-chat/**`, `apps/mcp/**` — other root workspaces; imported because they share the single lockfile (removing them would desync `npm ci`). Not used by the plan.
+- `apps/channel-slack/**`, `apps/local-chat/**`, `apps/mcp/**` — other root workspaces; imported because they share the single lockfile (removing them would desync `npm ci`). `apps/channel-slack/**` is the intended Slack transport reference for the planned build; `apps/local-chat/**` and `apps/mcp/**` are not used by the plan.
 - `scripts/check-env.sh`, `scripts/dev.sh`, `scripts/verify.sh`, `scripts/verify-mcp.mjs`, `scripts/*.test.*`
 - `hackathon-overview.md`, `hackathon-rules.md`, `using-sponsor-tools.md`, `CREDITS.md`, `templates/web.md`, `templates/slack.md`, `dev-docs/*.md`
 
@@ -64,8 +67,9 @@ choose), and upstream `README.md`, `AGENTS.md`, `SUBMISSION.md`,
 | `.github/workflows/ci.yml` | replaced | inherited workflow used floating `@v4` tags, no timeout/concurrency, and an `examples/auth0` job for code we did not import. New one is SHA-pinned, `contents: read`, PR-safe, telemetry off |
 | `.github/dependabot.yml` | new | grouped weekly updates; majors and the CopilotKit/AG-UI pair excluded |
 | `.hackathon-phase` | new after the tag | committed fail-closed phase record; no clock/environment unlock |
-| `scripts/check.sh`, `scripts/scope-audit.sh`, `scripts/scope-audit.test.sh` | new/revised | one verification entrypoint; phase-aware preparation freeze/provenance report; disposable negative cases |
-| `README.md`, `AGENTS.md`, `CLAUDE.md`, `SECURITY.md`, `SUBMISSION.md`, `HACKATHON_PROVENANCE.md`, `docs/**` | new/revised | this repository's documentation, thin inherited-link bridge, tracker, readiness, and build-day runbook |
+| `.cursor/hooks.json`, `.cursor/hooks/*.sh` | new after the tag | generic project-local context reminders, dangerous-command gate, and bounded completion check; no product behavior or process resurrection |
+| `scripts/check.sh`, `scripts/check-evidence.sh`, `scripts/docs-links.test.mjs`, `scripts/hooks.test.sh`, `scripts/scope-audit.sh`, `scripts/scope-audit.test.sh` | new/revised | one verification entrypoint; tree-bound successful-check evidence; canonical doc-link and hook fixtures; phase-aware preparation freeze/provenance report; disposable negative cases |
+| `README.md`, `AGENTS.md`, `CLAUDE.md`, `SECURITY.md`, `SUBMISSION.md`, `HACKATHON_PROVENANCE.md`, `docs/**` | new/revised | product status/credit, thin inherited-link bridge, prose plan/design, capability DAG, readiness, and build-day runbook |
 
 No inherited application source (`apps/**`, `packages/**`, inherited `scripts/*`,
 manifests, lockfile) has been modified. Administrative deviation from the
@@ -103,6 +107,9 @@ commit—not a timestamp and not the old tag alone—is the event boundary.
 | Preparation commit / PR | Change | Product core? |
 |---|---|---|
 | [PR #3](https://github.com/PranavMishra28/interlock/pull/3), merge `72dbc2163abbb86244549afd07461328030aa8e6` (substantive commits `43be666`, `851b745`) | audit, simplified topology prose, tracker/runbook, phase guard and generic negative tests | no |
+| [PR #4](https://github.com/PranavMishra28/interlock/pull/4), merge `f14ae7bfce9c5b6cbf6202a5dfc0e62db480fd24` | status-only read-back of PR #3 and remote checks | no |
+| [PR #5](https://github.com/PranavMishra28/interlock/pull/5), merge `bf547a37` (commit `1f437bb`) | allow six exact generic harness paths in the PREP_ONLY guard, so the following pull request can pass the trusted base check | no |
+| [PR #6](https://github.com/PranavMishra28/interlock/pull/6) | project hooks and fixtures, tree-bound check evidence, guard field-immutability and boundary pinning, product-first README, ambient Slack plan, Control Room design, capability-gated tracker DAG, runbook and readiness | no |
 
 ## Event work (fill only during an authorized BUILD_ACTIVE phase)
 

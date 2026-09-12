@@ -4,121 +4,100 @@ Phase: PREP_ONLY
 Build authorization: UNRECORDED
 Final pre-build commit: UNRECORDED
 
-This is the single shared status ledger. Git and test output outrank summaries.
-At every phase boundary and before context compaction, the lead updates this
-file with branch/HEAD, dirty paths, checks, blockers, ownership, and one exact
-next action.
+This is the only progress ledger. Git state and observed command results outrank
+assistant summaries. The lead updates this checkpoint at phase boundaries and
+before compaction.
 
 ## Checkpoint
 
-- Inspected branch/HEAD: `main` at
-  `72dbc2163abbb86244549afd07461328030aa8e6`; status-only branch
-  `prep-status-readback` starts there.
-- Last checkpoint: 2026-09-12 01:40 PDT.
-- Dirty paths: TRACKER, READINESS, and provenance read-back only; clean after
-  the status PR merges.
-- Active writer: lead agent owns the branch and shared status.
-- Read-only workers: eligibility/provenance; security/correctness;
-  feasibility/demo/context continuity. They return findings only.
-
-## Audit findings
-
-- `docs/PLAN.md` made Trigger.dev, Firestore, an executor service, and Auth0 the
-  critical path. Consequence: too many credentials/failure domains for the
-  event. Fix: local coordinator + one SQLite DB + inherited web + one target;
-  those services are deferred.
-- `scripts/scope-audit.sh` described a manual allowlist extension but had no
-  committed phase/authentication record. Consequence: an ambiguous build
-  transition. Fix: `.hackathon-phase`, fail-closed parsing, final pre-build SHA,
-  provenance reporting, disposable negative tests, and PR CI running the
-  already-trusted base copy so a changed guard cannot certify itself.
-- `.github/workflows/ci.yml` relied on prose for no privileged trigger, secrets,
-  writes, or deploys. Consequence: accidental authority could enter CI. Fix:
-  exact workflow allowlisting and negative-tested forbidden-pattern checks;
-  full-SHA pin and read-only-token checks remain.
-- `apps/channel-slack/src/channel.tsx` subscribes on mention and handles later
-  messages only for subscribed threads; `tools.tsx` buttons only edit a
-  message. Consequence: inherited Slack is transport/demo UI, not authenticated
-  approval. Fix: P0 capability checkpoint and exact actor/revision validation;
-  web is guaranteed fallback.
-- `apps/web/src/components/generative-ui.tsx` has inherited anonymous,
-  request-local HITL, and inherited API routes are unauthenticated. Consequence:
-  neither is Interlock authority or deployable as-is. Fix: loopback-only
-  verification now; replace with the shared authenticated coordinator route
-  before deployment.
-- `scripts/check-env.sh` sources `.env` as shell. Consequence: the file is
-  executable configuration. Fix: owner-created offline file only; strict
-  parsing is a BUILD_ACTIVE security prerequisite before real credentials.
-- `package-lock.json` contains vulnerable transitive PostCSS, Undici, `qs`, and
-  OpenTelemetry paths. Consequence: live exposure is unsafe without a reviewed
-  remediation. Fix: block hosting/live traffic at P0; a compatible lock-only
-  trial changed nothing and no major/override was forced.
-- Inherited docs link to a root `SUBMISSION.md` that was deliberately omitted.
-  Consequence: navigation broke. Fix: one thin bridge to canonical
-  `docs/SUBMISSION.md`; no second checklist.
-- All 75 imported blobs match pinned upstream; local/remote history contains no
-  Warden naming or Interlock core. Consequence: provenance anchors remain valid;
-  no rename, deletion, or repository replacement is needed.
-
-## Read-only review integration
-
-| Review | Path-specific result | Lead action |
-|---|---|---|
-| Eligibility/provenance | no core implementation; import/tag anchors valid; stale remote refs could confuse | reverified 75/75 against upstream; `git fetch --prune`; preserved the local merged branch/history |
-| Security/correctness | guard could self-certify; workflow prohibitions were prose; inherited web/Slack approval and routes lack Interlock authority | trusted-base PR guard, workflow policy negative tests, explicit deployment/auth blockers, local single-owner topology |
-| Feasibility/demo/context continuity | old plan would rebuild Trigger/Firestore/executor/Auth0; no tracker/runbook; Slack click only rewrites card | rewrote canonical docs for SQLite coordinator/web/one target; added TRACKER/RUNBOOK and P0–P4 prompts |
-
-One repair loop integrated the findings. The one-time guard-migration PR cannot
-retroactively use a base script that does not contain the new trusted marker;
-it uses the audited PR copy. Every later PR also runs the base-branch guard.
+- Inspected base: `main` at
+  `f14ae7bfce9c5b6cbf6202a5dfc0e62db480fd24` (PR #4 merge).
+- Working branch: `final-prep-handoff`.
+- Last checkpoint: 2026-09-12 02:23 PDT.
+- Dirty ownership: lead owns preparation docs, generic guard/hook controls, and
+  this tracker; no product writer is active.
+- Last verified: `bash scripts/check.sh` passed on the current working tree:
+  inherited typecheck/tests/MCP stdio, web build, phase guard negatives, hook
+  fixtures, canonical doc links, workflow policy and action pins. Inherited web
+  smoke rendered locally with no model call; gitleaks found no leak in history,
+  changed paths, or the private guide. `main`'s guard was re-run against this
+  branch in a clean clone and reported 0 violations. Three bounded read-only
+  reviews (eligibility/provenance, security/harness, feasibility/design) found
+  no Interlock core implementation; their findings were repaired in one pass.
+  PR #5 (guard allowlist) merged with green `verify`; PR #6 carries the rest.
+- Blockers: official opening/maintainer authorization are unrecorded; personal
+  Slack, OpenAI, and GCP capabilities are not live-verified; inherited
+  dependency exposure blocks public/live use.
+- Exact next action: finish and review the one final PREP_ONLY preparation PR.
+  Do not run P0 or implement product behavior.
 
 ## Invariant summary
 
-The canonical requirements are [PLAN §3](PLAN.md#3-requirements-and-invariants).
-In short: untrusted context has no authority; approval binds one exact revision
-and verified operator; an active hold never releases on timeout or missing
-evidence; enforcement and claims are server-side and atomic; fresh continuous
-evidence is required; uncertain cloud outcomes reconcile before retry;
-verification reads the intended target back; retirement retains redacted,
-correlated evidence. Conflicts fail closed.
+The immutable requirements are [PLAN §3](PLAN.md#3-requirements-and-invariants):
+untrusted context has no authority; trusted configuration selects the resource
+owner; explicit approval binds one revision; active holds fail closed; elapsed
+fresh evidence resets on gaps/flapping/restart; one server adapter enforces and
+deduplicates; uncertain effects reconcile; target-specific read-back decides the
+outcome; retirement retains redacted correlated evidence. See PLAN for the
+normative wording.
 
-## Work
+## Capability status
 
-| ID | Depends on | State | Acceptance evidence / blocker |
+| ID | Capability | Status | Evidence / unlock |
 |---|---|---|---|
-| PREP-01 Reality and provenance audit | — | DONE | Clean `main` at `76897dd`; 75/75 imported blobs match upstream `2622f07`; no Warden/core code found; Slack callbacks inspected |
-| PREP-02 Simplify canonical documents | PREP-01 | DONE | Lead diff review: prose + generic controls only; no `apps/**`, `packages/**`, manifest, or lockfile changes |
-| PREP-03 Phase-aware guard | PREP-01 | DONE | `scope-audit.test.sh` passes source/docs/sibling/self-widening/phase/authorization cases; workflow policy negatives pass |
-| PREP-04 Dependency exposure review | PREP-01 | DONE | GitHub alerts and `npm audit` inspected; compatible lock-only trial changed nothing; restrictions in READINESS |
-| PREP-05 Three read-only reviews | PREP-02, PREP-03 | DONE | Findings and one repair loop recorded above |
-| PREP-06 Offline/browser/context-reset verification | PREP-02..05 | DONE | `check.sh` passed in 49 s at 01:34 PDT; inherited page/browser APIs loaded with no failed resource/model call; history/source/artifact/task-log gitleaks scans found no leak; feasibility fresh-context review exposed and drove the tracker/runbook/topology fixes |
-| PREP-07 PR, CI, merge, remote read-back | PREP-06 | DONE | [PR #3](https://github.com/PranavMishra28/interlock/pull/3) merged as `72dbc216`; PR run `34683710278` and main run `34683950172` green; admin enforcement enabled; tag unchanged |
-| P0 Official opening and deliberate transition | PREP-07 | BLOCKED | Requires official opening plus explicit maintainer authorization and budget |
-| P1 Deterministic vertical slice | P0 | BLOCKED | See RUNBOOK; real target response required for live-complete |
-| P2 Contextual agency | P1 | BLOCKED | See RUNBOOK; context-removal and authority cases required |
-| P3 Reliability | P2 | BLOCKED | See RUNBOOK; critical invariant failures block features |
-| P4 Demo and submission preparation | P3 | BLOCKED | Human authorization required to publish or submit |
+| CAP-LOCAL | Node/npm/Git, inherited workspaces, loopback development | OFFLINE_READY | READINESS versions; `bash scripts/check.sh` |
+| CAP-HARNESS | Project hooks and resume path | OFFLINE_READY | hook fixtures pass; current IDE shell hook observed; fresh-session context check pending |
+| CAP-SLACK | Personal Slack workspace/app and ambient channel delivery | ACCESS_REQUIRED | owner installs after P0; new unmentioned top-level + reply test |
+| CAP-MODEL | Personal OpenAI project/key and agreed API budget | KEY_REQUIRED | one bounded post-P0 behavior/cost check |
+| CAP-GCP | Dedicated personal GCP project, budget, target and execution identity | ACCESS_REQUIRED | post-P0 least-privilege read/promote/read-back |
 
-States: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. `DONE` requires a command,
-test, URL, commit, or other observed result—not generated code or a checkbox.
+Statuses: `OFFLINE_READY`, `KEY_REQUIRED`, `ACCESS_REQUIRED`,
+`LIVE_VERIFIED`, `DEFERRED`.
 
-## Current blockers
+## Dependency DAG
 
-- The official build has not been explicitly authorized by the maintainer.
-- Eligibility of custom pre-event integrations is not stated; none are made.
-- Personal OpenAI key/credit entitlement, personal GCP project/budget, and
-  personal Slack app/workspace access are not live-verified.
-- Inherited runtime dependencies have unresolved advisories; do not host the
-  starter until the build-day remediation gate in READINESS passes.
+`Implementation` and `Live` are separate. `DONE_IMPL` means current-tree tests
+passed; it never implies an account-dependent path worked. `LIVE_VERIFIED`
+requires an observed external result. Acceptance text is immutable: a fallback
+may be useful but cannot make the original criterion green.
 
-## Exact next action
+| Task | Depends on | Write owner | Prerequisite capabilities | Immutable acceptance | Allowed verification | Evidence identity | Implementation | Live |
+|---|---|---|---|---|---|---|---|---|
+| P0-TRANSITION | — | lead only | organizer opening + explicit maintainer scope/budget | record opening evidence, authorization, final PREP_ONLY SHA; then commit `.hackathon-phase`, TRACKER, and provenance transition before probes or product work | `bash scripts/scope-audit.sh` | — | BLOCKED_PHASE | N/A |
+| CORE-1 | P0-TRANSITION | writer A | CAP-LOCAL | exact-revision contract, trusted owner/resource binding, persistence, hold/refusal, elapsed evidence, claim, retirement and retained receipt pass deterministic tests with labeled fixtures | task-owned contract/state/persistence tests, then `bash scripts/check.sh` | — | BLOCKED_PHASE | NOT_REQUIRED |
+| COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | — | BLOCKED_PHASE | NOT_REQUIRED |
+| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | — | BLOCKED_PHASE | NOT_REQUIRED |
+| REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | — | BLOCKED_PHASE | NOT_REQUIRED |
+| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | — | BLOCKED_PHASE | ACCESS_REQUIRED |
+| MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | — | BLOCKED_PHASE | KEY_REQUIRED |
+| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | — | BLOCKED_PHASE | ACCESS_REQUIRED |
+| RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
+| DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
 
-Do not run P0. Wait for the official build opening and explicit maintainer
-authorization. Then copy P0 from RUNBOOK and record authorization, budget, and
-the final PREP_ONLY commit before any build transition.
+Task states: `TODO`, `IN_PROGRESS`, `BLOCKED_PHASE`, `BLOCKED_CAPABILITY`,
+`BLOCKED_DEPS`, `DONE_IMPL`, `LIVE_VERIFIED`, `N/A`. A done cell requires a
+command/result and evidence identity formatted as `<commit>:<tree-id>` (or a
+redacted external receipt linked to that identity), not a checkbox.
+
+## Scheduling and ownership rules
+
+- Recover context → choose an eligible DAG node → implement → run its allowed
+  targeted check → inspect failures → repair within the recorded retry/time/API
+  budget → checkpoint here → continue.
+- One lead owns integration, shared contracts, manifests/lockfile, PLAN, and
+  TRACKER. At most two isolated writers may work concurrently, only on disjoint
+  paths. Reviewers are read-only.
+- Missing keys receive one concise notice. Continue eligible offline nodes and
+  recheck only the approved configuration location at bounded checkpoints; do
+  not poll private directories or print credentials.
+- Stop on user interruption, exhausted budget, no measured progress within the
+  retry limit, or a real permission/eligibility blocker. Never relax a guard or
+  acceptance requirement to continue.
 
 ## Resume protocol
 
-Read `AGENTS.md`, this file, relevant `PLAN.md` sections, then run
-`git status --short --branch`, `git log -1 --format=%H`, and
-`bash scripts/scope-audit.sh`. Do not use an old assistant summary as authority.
+Read `AGENTS.md`, this file, relevant PLAN sections, and actual Git
+status/log. Run `bash scripts/scope-audit.sh`. State phase, branch/HEAD, dirty
+paths, eligible task, owner, last current-tree evidence, blockers, and exact next
+action. Cursor hooks provide reminders only; reopen the chat or use the
+documented `cursor-agent --resume/--continue` path after a stopped process.

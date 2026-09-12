@@ -19,7 +19,8 @@ authorized continuation, independent read-back, and auditable retirement.
 
 Competition scope:
 
-- one opted-in incident/workspace;
+- one administrator-authorized Slack incident channel, including ordinary
+  unmentioned top-level messages and relevant replies;
 - one pending non-remediation release;
 - one recovery-condition family: a health measurement remains within a
   configured threshold for a configured elapsed window;
@@ -27,12 +28,20 @@ Competition scope:
   during the event;
 - at most two model roles: bounded intent/contract interpretation and
   read-only evidence narration;
-- one guaranteed surface: the inherited web workspace;
-- Slack only if the P0 checkpoint succeeds within 20 minutes.
+- Slack for conversation and exact-revision approval;
+- one Next.js Control Room for evidence and state, not a second chat surface.
 
 The held release is not the emergency fix. Emergency remediation, rollback,
 and independent administrator action remain outside this one-operation hold.
 Recovery must never require the blocked promotion.
+
+The flagship scenario is explicit: hold prepared revision `v42` until checkout
+health satisfies the stated threshold for the stated continuous window, then
+promote exactly `v42`. A fixed delay, a sustained-health window, and workflow
+expiration are different concepts. The MVP supports only the sustained-health
+family; unsupported condition types are clarified or rejected, never rewritten
+as a timer. Proposal expiry creates no hold, and expiry of an active workflow
+never authorizes promotion.
 
 ## 2. Chosen topology
 
@@ -44,10 +53,14 @@ Recovery must never require the blocked promotion.
    a Next.js request handler or hot-reload lifecycle.
 3. The coordinator is the sole owner of one file-backed SQLite database and
    the recoverable workflow. The web process talks to it over loopback.
-4. Use the existing web workspace as the guaranteed context and delivery
-   surface.
-5. If live Slack passes P0, reuse the inherited CopilotKit Channels path; do
-   not add a second Slack framework.
+4. Reuse the inherited CopilotKit Channels path for Slack transport only after
+   proving ambient top-level and reply delivery; do not add a second Slack
+   framework or silently accept mention-only behavior. The Channel listener runs
+   inside the coordinator process, or as a loopback client of it; it never opens
+   the SQLite file, so a second database owner cannot appear.
+5. Replace the inherited web example with one Control Room backed by the
+   coordinator. The browser never opens SQLite and does not duplicate Slack
+   conversation or approval.
 6. The local coordinator calls the Google API directly using a dedicated,
    personal-project execution identity to promote one allowlisted prepared
    Cloud Run revision, then reads service routing and fresh health back.
@@ -70,18 +83,23 @@ preinstall one now.
 
 ### Authentication paths
 
-- **Web fallback:** loopback-only coordinator; a server-side operator token is
+- **Control Room:** loopback-only coordinator; a server-side operator token is
   mapped to one configured operator ID and exchanged for an HttpOnly,
-  same-site session. Every mutating request revalidates the session and exact
-  contract revision. Display names and anonymous buttons carry no authority.
-  The inherited `useHumanInTheLoop` approval is anonymous/request-local and
-  must be replaced, not reused as authorization.
-- **Slack option:** CopilotKit’s `identifyUser: "platform"` supplies the
-  provider/workspace/user tuple. Approval additionally requires the
-  allowlisted Slack workspace and user ID and must bind the clicked message to
-  the exact proposal revision. The managed ingress must verify Slack delivery;
-  application code deduplicates by stable event/delivery and suppresses bot
-  messages.
+  same-site session. Every test-only mutating request revalidates the session,
+  is visibly labeled, and cannot substitute for Slack approval. The inherited
+  `useHumanInTheLoop` approval is anonymous/request-local and must not be reused
+  as authority.
+- **Slack primary:** CopilotKit’s `identifyUser: "platform"` supplies the
+  provider/workspace/user tuple. Trusted configuration maps the one allowed
+  workspace/channel and resource to owner Slack IDs. A junior may suggest, but
+  only a configured owner may approve the exact proposal revision through an
+  explicit button. Display name, seniority, model judgment, an unrelated “yes,”
+  emoji, or checkmark has no authority; any checkmark shown reflects a persisted
+  approval. Managed ingress must verify Slack delivery. Application code
+  deduplicates stable events/deliveries and suppresses bot and self-message
+  loops. Proposal identity and the owner’s Slack user ID are persisted, so a
+  restarted listener rebuilds its approval bindings instead of depending on an
+  in-process click handler; a click from any other actor is rejected.
 - **Cloud operation:** a personal human creates the target and prepared
   revision. The local coordinator uses ADC impersonation for a dedicated
   execution service account—no downloaded key—with target-scoped Cloud Run
@@ -112,13 +130,17 @@ workflow scheduler resumes while the laptop is unavailable. Revisit this
 topology only after the vertical slice works and a concrete requirement exceeds
 those limits.
 
-Fallback order:
+Fallback conditions:
 
-1. Slack checkpoint fails → use the real web workspace; never imitate Slack.
+1. Slack checkpoint fails → continue eligible offline work, but Slack stays
+   `ACCESS_REQUIRED` rather than `LIVE_VERIFIED`, and the integrated
+   release/demo gate stays blocked. The Control Room never imitates Slack.
 2. Personal GCP access or target setup fails → use a genuinely running local
    target labeled “local”; do not claim cloud execution.
 3. Model access fails → deterministic P1 may proceed, but P2 and an agent claim
    remain blocked.
+
+Fallback evidence never satisfies the original Slack or Cloud Run criterion.
 
 ## 3. Requirements and invariants
 
@@ -128,9 +150,15 @@ These stable IDs govern implementation and tests.
   tool results, and model output are untrusted. Resolve references only against
   allowlisted resources. Missing duration, target, permission, or URL requires
   clarification or abstention; never invent it. Health and target URLs must
-  exactly equal the approved allowlist row, not merely share a host.
+  exactly equal the approved allowlist row, not merely share a host. Grounding
+  is bounded, attributed channel/thread context plus trusted inventory, owner
+  mapping, pending-release state, and current operational evidence—not
+  arbitrary web research.
 - **INV-02 Revision-bound authority.** One verified operator approves one exact
-  contract revision. Immediately before atomically claiming an operation,
+  contract revision. The owner is looked up by trusted resource configuration,
+  never inferred from display name, seniority, conversation, or model output.
+  Approval requires the proposal’s explicit Slack interaction. Immediately
+  before atomically claiming an operation,
   revalidate operator authority, expiry, target, revision, and fresh condition
   evidence. Conflicting active proposals are rejected. The model never decides
   which person outranks another, and a conflicting message cannot remove an
@@ -146,8 +174,11 @@ These stable IDs govern implementation and tests.
   restart or observation gaps reset the window. Sampling proves nothing between
   observations.
 - **INV-06 Durable identity and deduplication.** Persist source delivery,
-  intent, revision, and operation identity before dispatch. Deduplicate
-  deliveries and claims. Database atomicity ends at the cloud boundary.
+  message/thread relationship, edit provenance, intent, revision, and operation
+  identity before dispatch. Deduplicate deliveries, proposals, interactions,
+  and claims without conflating separate discussions. Retain only the bounded
+  context required for evidence; do not copy entire private transcripts.
+  Database atomicity ends at the cloud boundary.
 - **INV-07 Uncertain effects.** When dispatch outcome is uncertain, read the
   external target before retrying. Never blindly repeat a consequential effect.
 - **INV-08 Target-specific verification.** Verify the intended revision,
@@ -160,7 +191,9 @@ These stable IDs govern implementation and tests.
 - **INV-10 Bounded agency.** The intent role may propose or abstain but has no
   write credential. The optional verifier fetches independent observations;
   deterministic checks decide observable pass/fail. Do not add model calls to
-  inflate an agent count.
+  inflate an agent count. The ambient flow is event persistence/deduplication →
+  bounded context/evidence → proposal or abstention → exact allowlisted
+  resource → trusted owner lookup → proposal routed to that owner.
 
 ## 4. Slack evidence from inherited code
 
@@ -172,15 +205,25 @@ provider identity.
 The inherited `propose_action` in `apps/channel-slack/src/tools.tsx` is demo
 behavior only. A click updates the proposal message; it does not authorize a
 domain action, resume the agent, or execute anything. Inline handlers require
-the listener to remain alive and are not restart-reconstructible. P0 must prove
-real subscribed-message delivery,
-stable actor identity, duplicate handling, bot-message suppression, and an
-approval callback before Slack is selected.
+the listener to remain alive and are not restart-reconstructible. This inherited
+mention/subscription path does not satisfy the planned ambient channel.
 
-Required Slack scope is one visibly opted-in thread/workspace, not ambient
-monitoring of every channel. The thread must visibly show monitoring active and
-how the operator stops it. Document the generated manifest’s event
-subscriptions and least-required history/mention permissions after setup.
+The primary scope is exactly one administrator-authorized incident channel.
+Installation and channel permission are the monitoring opt-in; a mention,
+keyword, slash command, or per-thread subscription is never normal invocation.
+The listener must accept ordinary top-level messages and relevant replies while
+preserving channel/thread relationships and message edits. It must suppress bot
+loops, deduplicate replayed deliveries and proposals, and avoid retaining
+unneeded private transcript content.
+
+The first live capability check after the committed BUILD_ACTIVE transition
+must use a brand-new unmentioned top-level message and an unmentioned reply.
+It also proves stable platform identity, duplicate suppression, bot-message
+suppression, and an explicit approval callback bound to the exact proposal and
+configured owner. Mention-only or subscribed-thread-only delivery fails this
+checkpoint; it cannot be relabeled as ambient success. Record the generated
+manifest’s event subscriptions, interactivity, channel/history scopes, owner
+mapping, uninstall/stop path, and observed delivery IDs without secrets.
 
 ## 5. Acceptance scenarios
 
@@ -198,12 +241,15 @@ P1 deterministic evidence:
 
 P2 contextual evidence:
 
-- decisions can produce bounded proposals; hypotheticals, negation, ambiguity,
-  untrusted instructions, unknown references, and missing parameters abstain;
+- an unmentioned top-level channel decision and a relevant unmentioned reply
+  can produce one bounded proposal; thread relationships and edits remain
+  attributable, while duplicate and bot deliveries produce no extra proposal;
+- hypotheticals, negation, ambiguity, untrusted instructions, unknown
+  references, unsupported condition types, and missing parameters abstain;
 - remove supporting conversation context from an otherwise resolvable
   reference: the agent must clarify or abstain;
-- duplicate source messages do not duplicate proposals; unauthorized approval
-  does not advance work.
+- the proposal routes to the trusted configured owner; unrelated “yes,” emoji,
+  display names, and unauthorized button clicks do not advance work.
 
 P3 reliability evidence:
 

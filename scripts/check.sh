@@ -5,8 +5,9 @@
 #
 # Runs, in order: lockfile drift, inherited `npm run verify` (typecheck of all
 # workspaces, inherited tests, MCP stdio round trip), the web build, the
-# phase/scope audit and its negative tests, and a pin check on GitHub Actions. Needs no
-# credentials and makes no paid calls. No formatter or linter is inherited;
+# phase/scope audit and its negative tests, project-hook fixture tests, and a
+# pin check on GitHub Actions. Needs no credentials and makes no paid calls. No
+# formatter or linter is inherited;
 # TypeScript strict typecheck is the static check (adding one is a lockfile
 # change and therefore a reviewed decision, not a silent addition).
 set -uo pipefail
@@ -30,6 +31,12 @@ step "Phase guard — scope/provenance and negative cases"
 run bash scripts/scope-audit.sh
 run bash scripts/scope-audit.test.sh
 
+step "Developer hooks — documented outputs, safety decisions, and current-tree evidence"
+run bash scripts/hooks.test.sh
+
+step "Documentation — canonical local links and anchors"
+run node scripts/docs-links.test.mjs
+
 step "GitHub Actions — no privileged triggers, secrets, writes, deploys, or publishing"
 forbidden=$(grep -RniE \
   'pull_request_target:|secrets[.:]|permissions:[[:space:]]*write-all|[[:space:]][a-z-]+:[[:space:]]*write([[:space:]]|$)|npm[[:space:]]+publish|gcloud[[:space:]]+run[[:space:]]+deploy|docker[[:space:]]+push|gh[[:space:]]+release' \
@@ -48,4 +55,14 @@ if [ -z "$uses" ]; then printf '  \033[31m✗\033[0m no `uses:` lines found unde
 elif [ -z "$unpinned" ]; then printf '  \033[32m✓\033[0m all %s action(s) pinned\n' "$(printf '%s\n' "$uses" | sed '/^$/d' | wc -l | tr -d ' ')"
 else printf '  \033[31m✗\033[0m unpinned: %s\n' "$unpinned"; FAILED=1; fi
 
-if [ "$FAILED" = 0 ]; then printf '\n\033[1;32m✓ check.sh passed\033[0m\n'; else printf '\n\033[1;31m✗ check.sh failed\033[0m\n'; exit 1; fi
+if [ "$FAILED" = 0 ]; then
+  if INTERLOCK_CHECK_RUN=1 bash scripts/check-evidence.sh record; then
+    printf '\n\033[1;32m✓ check.sh passed; current-tree evidence recorded\033[0m\n'
+  else
+    printf '\n\033[1;31m✗ check.sh passed but evidence recording failed\033[0m\n'
+    exit 1
+  fi
+else
+  printf '\n\033[1;31m✗ check.sh failed\033[0m\n'
+  exit 1
+fi
