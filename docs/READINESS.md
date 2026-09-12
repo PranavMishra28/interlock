@@ -121,14 +121,24 @@ Two inherited security boundaries also block deployment as-is:
   `76897ddd227c4d3f06e35063679e7189d075f747`.
 - Existing main CI: [run 34641117900](https://github.com/PranavMishra28/interlock/actions/runs/34641117900),
   `verify` succeeded at that commit.
+- Preparation [PR #3](https://github.com/PranavMishra28/interlock/pull/3):
+  required `verify` [run 34683710278](https://github.com/PranavMishra28/interlock/actions/runs/34683710278)
+  passed; merged as `72dbc2163abbb86244549afd07461328030aa8e6`;
+  push [run 34683950172](https://github.com/PranavMishra28/interlock/actions/runs/34683950172)
+  passed.
 - Previous fresh clone: `npm ci` and `bash scripts/check.sh` passed; inherited
   web rendered locally with no live model call. Evidence image:
   `docs/evidence/inherited-starter-web-2026-09-11.png`.
 - GitHub read-back at baseline: public personal repo; secret scanning and push
   protection enabled; Dependabot alerts/updates enabled; private vulnerability
   reporting enabled; protected `main` requires strict `verify`, blocks force
-  push/deletion, and requires no human reviewer. Non-provider secret patterns
-  were unavailable on this plan.
+  push/deletion, applies required checks to administrators, and requires no
+  human reviewer. Non-provider secret patterns were unavailable on this plan.
+- Preparation verification after review repair: `bash scripts/check.sh` passed
+  in 49 seconds; phase/self-widening and workflow-policy negative cases passed;
+  the inherited browser page and info/thread resources loaded locally without
+  a model call; gitleaks found no leaks in history, source, ignored generated
+  artifacts checked, or task logs.
 
 Current preparation-PR results are recorded in TRACKER when run; do not infer
 them from the baseline evidence above.
