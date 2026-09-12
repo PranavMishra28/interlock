@@ -192,6 +192,29 @@ before compaction.
   prove live Slack delivery or approval, OpenAI behavior, or any GCP/Cloud Run
   observation or promotion. No external account, paid call, or deployment was
   used.
+- Execution and interface correctness pass 2026-09-12, evidence
+  `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151`:
+  five defects found by review and closed with
+  tests. (1) Hold readiness was computed only from target-reported timestamps,
+  so a target that dated one sample in the past and the next slightly ahead
+  satisfied the window in no real time; readiness now also requires the
+  coordinator's own clock to have advanced, and stored workflows without a
+  local window start restart it rather than inheriting a free pass. (2) The
+  supervisor treats a missed polling opportunity as a `gap` using the timer's
+  own heartbeat, so a slow target is not mistaken for a suspended machine.
+  (3) The validated Intent primitive was imported only by its own test; the
+  live Slack path built a separate prompt, so the suite proved guarantees the
+  product did not provide. Ambient delivery now runs on the shared bounded,
+  validated path. (4) The Control Room labelled a failed coordinator fetch as
+  coordinator data, spaced its plot by array index so observation gaps were
+  invisible, and presented snapshot time as a sample that never happened; all
+  three now report what is actually known. (5) Cloud Run promotion exchanged
+  the maintainer's own credentials and ran with their full permissions; it now
+  executes through IAM Credentials as a dedicated scoped identity, and the
+  unconfigured case warns visibly rather than falling back silently. Offline
+  suites: 11 agent-core, 20 channel-slack, 51 web, 52 environment. This proves
+  the local and offline behavior only; the scoped Cloud Run identity had not
+  yet been re-verified live at this commit.
 - Live GCP evidence: dedicated personal project `interlock-508417` provisioned
   in `us-central1` inside the $0 Always Free envelope, isolated in the named
   gcloud configuration `interlock`. `checkout-v41` serves 100%; candidate
@@ -199,18 +222,22 @@ before compaction.
   `{value, observedAt}` contract the adapter requires; an unauthenticated
   `POST /fault` is refused with 403 while a tokened call genuinely degrades
   health to 0.9 and recovers to 0.1. The teardown ledger is in READINESS.
-- Blockers: CAP-SLACK remains ACCESS_REQUIRED. The previously pasted bot and
-  app-level tokens are compromised and may not be recovered or reused; the
-  managed Channel needs a freshly issued bot token plus the Slack signing
-  secret and configured workspace/channel/owner IDs. Inherited dependency
-  exposure still blocks public hosting, but the reviewed loopback-only
-  READINESS amendment permits the bounded local Slack/OpenAI/Cloud Run demo.
-- Exact next action: after the maintainer places the fresh Slack bot token,
-  signing secret, workspace ID, channel ID, and owner ID directly in ignored
-  `.env`, attach the existing `interlock` managed Channel, run the bounded live
-  top-level/reply/approval/restart checks, and complete RELEASE-1. Until that
-  external install exists, continue eligible UI/rehearsal/repository gates
-  without representing synthetic evidence as live.
+- Blockers: CAP-SLACK remains ACCESS_REQUIRED. The workspace, channel, and
+  owner IDs are configured, and Intelligence reports the `interlock` Channel
+  present with its transport online, but `adapters.slack` is `absent` and the
+  listener reports `provider: not_attached` / `setup_required` and exits. The
+  managed Channel still needs its bot token and signing secret attached
+  server-side; those are the only two values standing between the
+  implementation and the live column. Inherited dependency exposure still
+  blocks public hosting, but the reviewed loopback-only READINESS amendment
+  permits the bounded local Slack/OpenAI/Cloud Run demo.
+- Exact next action: attach the existing `interlock` managed Channel with its
+  Slack credentials, confirm `npm run channel:status` no longer reports the
+  adapter absent and the listener reaches `overall: online`, then run the
+  bounded live top-level/reply/approval/restart checks and complete
+  RELEASE-1. Do not create a second Channel. Until that attachment exists,
+  continue eligible UI/rehearsal/repository gates without representing
+  synthetic evidence as live.
 
 ## Invariant summary
 
@@ -245,13 +272,13 @@ may be useful but cannot make the original criterion green.
 | Task | Depends on | Write owner | Prerequisite capabilities | Immutable acceptance | Allowed verification | Evidence identity | Implementation | Live |
 |---|---|---|---|---|---|---|---|---|
 | P0-TRANSITION | — | lead only | organizer opening + explicit maintainer scope/budget | record opening evidence, authorization, final PREP_ONLY SHA; then commit `.hackathon-phase`, TRACKER, and provenance transition before probes or product work | `bash scripts/scope-audit.sh` | `dc42655:99fb15e` | DONE_IMPL | N/A |
-| CORE-1 | P0-TRANSITION | writer A | CAP-LOCAL | exact-revision contract, trusted owner/resource binding, persistence, hold/refusal, elapsed evidence, claim, retirement and retained receipt pass deterministic tests with labeled fixtures | task-owned contract/state/persistence tests, then `bash scripts/check.sh` | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
+| CORE-1 | P0-TRANSITION | writer A | CAP-LOCAL | exact-revision contract, trusted owner/resource binding, persistence, hold/refusal, elapsed evidence, claim, retirement and retained receipt pass deterministic tests with labeled fixtures | task-owned contract/state/persistence tests, then `bash scripts/check.sh` | `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151` | DONE_IMPL | NOT_REQUIRED |
 | COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
-| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `748bd2d:eb9139c4386394a6ced8740a887c869f7ce079ee` | DONE_IMPL | NOT_REQUIRED |
+| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151` | DONE_IMPL | NOT_REQUIRED |
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
-| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `a78ea06` | DONE_IMPL (restart-safe registered approval) | ACCESS_REQUIRED |
+| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151` | DONE_IMPL (restart-safe approval; live path runs the validated Intent primitive) | ACCESS_REQUIRED (Channel present, Slack adapter absent) |
 | MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `0c784c9` | DONE_IMPL | LIVE_VERIFIED |
-| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `a78ea06` | DONE_IMPL | LIVE_VERIFIED |
+| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151` | DONE_IMPL (promotion executes as a scoped impersonated identity) | LIVE_VERIFIED on the prior direct-credential path; re-verification through the scoped identity outstanding |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
 
