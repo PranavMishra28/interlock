@@ -34,9 +34,28 @@ export class InterlockCoordinator {
 
   propose(contract: Contract, now = Date.now()) {
     const existing = this.store.get(contract.id);
+    if (existing) {
+      if (
+        existing.contract.sourceDeliveryId === contract.sourceDeliveryId &&
+        JSON.stringify(existing.contract) === JSON.stringify(contract)
+      ) {
+        return existing;
+      }
+      throw new Error(`Workflow ${contract.id} is immutable; create a new revision.`);
+    }
+    const conflict = this.store.list().find(
+      (workflow) =>
+        workflow.contract.id !== contract.id &&
+        workflow.contract.resourceId === contract.resourceId &&
+        workflow.status !== "RETIRED",
+    );
+    if (conflict) {
+      throw new Error(
+        `Resource ${contract.resourceId} already has active workflow ${conflict.contract.id}.`,
+      );
+    }
     const workflow = createWorkflow(contract, this.trusted);
     if (!this.store.createFromDelivery(workflow, now)) {
-      if (existing) return existing;
       throw new Error("Duplicate delivery has no matching persisted workflow.");
     }
     return workflow;

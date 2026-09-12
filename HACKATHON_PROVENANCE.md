@@ -115,7 +115,8 @@ commit—not a timestamp and not the old tag alone—is the event boundary.
 
 | Commit range | What was built | Inherited pieces it depends on |
 |---|---|---|
-| P0 transition (commit pending) | recorded official opening, maintainer authorization, and immutable final PREP_ONLY boundary; no product behavior | phase guard and preparation documents |
+| `dc42655` | recorded official opening, maintainer authorization, and immutable final PREP_ONLY boundary; no product behavior | phase guard and preparation documents |
+| `bfbcbc4` | deterministic revision-bound workflow and intent boundary; native SQLite sole-owner store; loopback coordinator and exact-target adapter contract; read-only Control Room with visibly synthetic fixture; product and reliability tests | inherited TypeScript workspaces, Node 22 `node:sqlite`, Next.js web app and CSS tokens |
 
 The event boundary is the `PREBUILD_COMMIT` recorded by the committed P0 phase
 transition. `scripts/scope-audit.sh` reports every path changed after it.

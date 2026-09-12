@@ -157,3 +157,89 @@ test("uncertain non-effect becomes ready only after read-back", async () => {
     fixture.close();
   }
 });
+
+test("concurrent continuation cannot claim or dispatch twice", async () => {
+  const fixture = setup();
+  try {
+    ready(fixture.coordinator, fixture.contract, fixture.base);
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    let promotions = 0;
+    const adapter: TargetAdapter = {
+      async promote() {
+        promotions += 1;
+        await blocked;
+      },
+      async read() {
+        return {
+          revision: "v42",
+          trafficPercent: 100,
+          healthValue: 0.2,
+          observedAt: Date.now(),
+        };
+      },
+    };
+    const first = fixture.coordinator.continue(
+      fixture.contract.id,
+      adapter,
+      fixture.base + 1_120,
+    );
+    await assert.rejects(
+      fixture.coordinator.continue(
+        fixture.contract.id,
+        adapter,
+        fixture.base + 1_121,
+      ),
+      /Recovery evidence is not ready/,
+    );
+    release();
+    assert.equal((await first).status, "RETIRED");
+    assert.equal(promotions, 1);
+  } finally {
+    fixture.close();
+  }
+});
+
+test("conflicting proposal and stale second approval fail closed", () => {
+  const fixture = setup();
+  try {
+    fixture.coordinator.propose(fixture.contract, fixture.base);
+    assert.equal(
+      fixture.coordinator.propose(fixture.contract, fixture.base + 1).status,
+      "PROPOSED",
+    );
+    assert.throws(
+      () => fixture.coordinator.propose({
+        ...fixture.contract,
+        revision: fixture.contract.revision + 1,
+        sourceDeliveryId: "delivery-43",
+      }, fixture.base + 1),
+      /immutable/,
+    );
+    assert.throws(
+      () => fixture.coordinator.propose({
+        ...fixture.contract,
+        id: "hold-43",
+        sourceDeliveryId: "delivery-43",
+      }, fixture.base + 1),
+      /already has active workflow/,
+    );
+    fixture.coordinator.approve(
+      fixture.contract.id,
+      "U-OWNER",
+      fixture.contract.revision,
+      fixture.base + 2,
+    );
+    assert.throws(
+      () => fixture.coordinator.approve(
+        fixture.contract.id,
+        "U-OWNER",
+        fixture.contract.revision,
+        fixture.base + 3,
+      ),
+      /Only a proposal can be approved/,
+    );
+  } finally {
+    fixture.close();
+  }
+});

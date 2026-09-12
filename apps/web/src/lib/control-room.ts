@@ -12,9 +12,35 @@ export type ControlRoomSnapshot = {
   listener: { connected: boolean; reason?: string };
   workflow: Workflow | null;
   samples: { observedAt: number; value: number }[];
+  notice?: string;
 };
 
-export function syntheticSnapshot(): ControlRoomSnapshot {
+export type FixtureState =
+  | "observing"
+  | "empty"
+  | "awaiting-owner"
+  | "coordinator-offline"
+  | "stale"
+  | "gap"
+  | "unauthorized"
+  | "intervention"
+  | "retired";
+
+export const fixtureStates: FixtureState[] = [
+  "observing",
+  "empty",
+  "awaiting-owner",
+  "coordinator-offline",
+  "stale",
+  "gap",
+  "unauthorized",
+  "intervention",
+  "retired",
+];
+
+export function syntheticSnapshot(
+  fixture: FixtureState = "observing",
+): ControlRoomSnapshot {
   const base = Date.UTC(2026, 8, 12, 17, 25);
   const trusted = {
     resourceId: "checkout",
@@ -47,7 +73,7 @@ export function syntheticSnapshot(): ControlRoomSnapshot {
   for (const sample of samples) {
     workflow = observe(workflow, sample.value, sample.observedAt, sample.observedAt + 1_000);
   }
-  return {
+  const snapshot: ControlRoomSnapshot = {
     asOf: base + 56_000,
     source: "synthetic",
     coordinator: { connected: true, reason: "Fixture preview" },
@@ -55,11 +81,90 @@ export function syntheticSnapshot(): ControlRoomSnapshot {
     workflow,
     samples,
   };
+  if (fixture === "empty") return { ...snapshot, workflow: null, samples: [] };
+  if (fixture === "awaiting-owner") {
+    return {
+      ...snapshot,
+      workflow: createWorkflow(workflow.contract, trusted),
+      samples: [],
+    };
+  }
+  if (fixture === "coordinator-offline") {
+    return {
+      ...snapshot,
+      coordinator: { connected: false, reason: "Connection refused" },
+    };
+  }
+  if (fixture === "stale" || fixture === "gap") {
+    return {
+      ...snapshot,
+      workflow: {
+        ...workflow,
+        status: "ACTIVE_HOLD",
+        observation: {
+          ...workflow.observation!,
+          windowStartedAt: null,
+          resets: [
+            ...workflow.observation!.resets,
+            { at: base + 56_000, reason: fixture },
+          ],
+        },
+      },
+    };
+  }
+  if (fixture === "unauthorized") {
+    return {
+      ...snapshot,
+      workflow: createWorkflow(workflow.contract, trusted),
+      samples: [],
+      notice: "Unauthorized interaction rejected. Awaiting the configured owner.",
+    };
+  }
+  if (fixture === "intervention") {
+    return {
+      ...snapshot,
+      workflow: {
+        ...workflow,
+        status: "NEEDS_INTERVENTION",
+        operation: {
+          id: "op-mismatch-42",
+          claimedAt: base + 56_000,
+          uncertain: false,
+        },
+      },
+      notice: "Verification mismatch: expected v42; observed v41.",
+    };
+  }
+  if (fixture === "retired") {
+    return {
+      ...snapshot,
+      workflow: {
+        ...workflow,
+        status: "RETIRED",
+        operation: {
+          id: "op-42",
+          claimedAt: base + 56_000,
+          uncertain: false,
+        },
+        receipt: {
+          operationId: "op-42",
+          expectedRevision: "v42",
+          observedRevision: "v42",
+          trafficPercent: 100,
+          healthValue: 0.42,
+          verifiedAt: base + 58_000,
+        },
+      },
+    };
+  }
+  return snapshot;
 }
 
-export async function loadSnapshot(): Promise<ControlRoomSnapshot> {
+export async function loadSnapshot(
+  fixture: FixtureState = "observing",
+): Promise<ControlRoomSnapshot> {
   const url = process.env.INTERLOCK_COORDINATOR_URL;
-  if (!url) return syntheticSnapshot();
+  if (!url) return syntheticSnapshot(fixture);
   try {
     const response = await fetch(`${url}/v1/snapshot`, {
       cache: "no-store",
@@ -68,7 +173,7 @@ export async function loadSnapshot(): Promise<ControlRoomSnapshot> {
     if (!response.ok) throw new Error(`Coordinator returned ${response.status}`);
     return { ...(await response.json() as Omit<ControlRoomSnapshot, "source">), source: "coordinator" };
   } catch (error) {
-    const snapshot = syntheticSnapshot();
+    const snapshot = syntheticSnapshot(fixture);
     return {
       ...snapshot,
       coordinator: {

@@ -1,4 +1,8 @@
-import { loadSnapshot } from "@/lib/control-room";
+import {
+  fixtureStates,
+  loadSnapshot,
+  type FixtureState,
+} from "@/lib/control-room";
 
 const lifecycle = [
   "Source",
@@ -32,8 +36,16 @@ const next: Record<string, string> = {
   RETIRED: "Retain receipt",
 };
 
-export default async function Home() {
-  const snapshot = await loadSnapshot();
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ fixture?: string }>;
+}) {
+  const requested = (await searchParams).fixture;
+  const fixture: FixtureState = fixtureStates.includes(requested as FixtureState)
+    ? requested as FixtureState
+    : "observing";
+  const snapshot = await loadSnapshot(fixture);
   const workflow = snapshot.workflow;
   const points = snapshot.samples.map((sample, index) => {
     const x = snapshot.samples.length === 1 ? 320 : 24 + index * (592 / (snapshot.samples.length - 1));
@@ -56,6 +68,8 @@ export default async function Home() {
           {snapshot.source === "synthetic" ? "TEST INPUT — SYNTHETIC" : "Coordinator data"}
         </span>
       </header>
+
+      {snapshot.notice ? <p className="cr-alert" role="status">{snapshot.notice}</p> : null}
 
       {workflow ? (
         <>

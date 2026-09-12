@@ -13,14 +13,13 @@ before compaction.
 - Inspected base: clean `main` at
   `88b6309b071978fb2ec585b683392a11d5283358` (PR #6 merge).
 - Working branch: `build-active`.
-- Last checkpoint: 2026-09-12 10:21 PDT.
+- Last checkpoint: 2026-09-12 BUILD_ACTIVE early slice.
 - Authorization evidence: the maintainer confirmed the official build opening
   and authorized BUILD_ACTIVE in this session. Scope is the PLAN MVP and
   personal accounts only. No external spend or provisioning limit is recorded,
   so paid calls, app installation, IAM, billing, and cloud creation remain
   blocked while offline product work proceeds.
-- Dirty ownership: lead owns the transition and shared CORE-1 contract; no
-  second writer is active.
+- Dirty ownership: lead owns TRACKER/integration; no second writer is active.
 - Last verified: `bash scripts/check.sh` passed on the current working tree:
   inherited typecheck/tests/MCP stdio, web build, phase guard negatives, hook
   fixtures, canonical doc links, workflow policy and action pins. Inherited web
@@ -30,10 +29,16 @@ before compaction.
   reviews (eligibility/provenance, security/harness, feasibility/design) found
   no Interlock core implementation; their findings were repaired in one pass.
   PR #5 (guard allowlist) merged with green `verify`; PR #6 carries the rest.
+- BUILD_ACTIVE evidence: transition `dc42655:99fb15e`; deterministic slice
+  `bfbcbc4:d24b0f6`. `bash scripts/check.sh` passed on the exact pre-commit
+  slice tree (`dc42655:d813a9b`), including 5 core tests, 3 intent tests, 6
+  coordinator/store tests, all inherited checks, web build, and repaired
+  phase-guard fixtures. A loopback-only browser preview rendered the visibly
+  synthetic Control Room with no model call.
 - Blockers: personal Slack, OpenAI, and GCP capabilities and spending limits
   are not live-verified; inherited dependency exposure blocks public/live use.
-- Exact next action: commit P0-TRANSITION, run the phase audit, then start the
-  eligible offline CORE-1 vertical slice.
+- Exact next action: finish UI-1 required states and browser checks, then
+  complete offline Slack ingress and remaining REL-1 race cases.
 
 ## Invariant summary
 
@@ -67,13 +72,13 @@ may be useful but cannot make the original criterion green.
 
 | Task | Depends on | Write owner | Prerequisite capabilities | Immutable acceptance | Allowed verification | Evidence identity | Implementation | Live |
 |---|---|---|---|---|---|---|---|---|
-| P0-TRANSITION | — | lead only | organizer opening + explicit maintainer scope/budget | record opening evidence, authorization, final PREP_ONLY SHA; then commit `.hackathon-phase`, TRACKER, and provenance transition before probes or product work | `bash scripts/scope-audit.sh` | transition commit pending | IN_PROGRESS | N/A |
-| CORE-1 | P0-TRANSITION | writer A | CAP-LOCAL | exact-revision contract, trusted owner/resource binding, persistence, hold/refusal, elapsed evidence, claim, retirement and retained receipt pass deterministic tests with labeled fixtures | task-owned contract/state/persistence tests, then `bash scripts/check.sh` | — | TODO | NOT_REQUIRED |
-| COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | — | BLOCKED_DEPS | NOT_REQUIRED |
-| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | — | BLOCKED_DEPS | NOT_REQUIRED |
+| P0-TRANSITION | — | lead only | organizer opening + explicit maintainer scope/budget | record opening evidence, authorization, final PREP_ONLY SHA; then commit `.hackathon-phase`, TRACKER, and provenance transition before probes or product work | `bash scripts/scope-audit.sh` | `dc42655:99fb15e` | DONE_IMPL | N/A |
+| CORE-1 | P0-TRANSITION | writer A | CAP-LOCAL | exact-revision contract, trusted owner/resource binding, persistence, hold/refusal, elapsed evidence, claim, retirement and retained receipt pass deterministic tests with labeled fixtures | task-owned contract/state/persistence tests, then `bash scripts/check.sh` | `bfbcbc4:d24b0f6` | DONE_IMPL | NOT_REQUIRED |
+| COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | `bfbcbc4:d24b0f6` | DONE_IMPL | NOT_REQUIRED |
+| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `bfbcbc4:d24b0f6` | IN_PROGRESS | NOT_REQUIRED |
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | — | BLOCKED_DEPS | NOT_REQUIRED |
 | SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | — | BLOCKED_DEPS | ACCESS_REQUIRED |
-| MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | — | BLOCKED_DEPS | KEY_REQUIRED |
+| MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `bfbcbc4:d24b0f6` | DONE_IMPL | KEY_REQUIRED |
 | CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | — | BLOCKED_DEPS | ACCESS_REQUIRED |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |

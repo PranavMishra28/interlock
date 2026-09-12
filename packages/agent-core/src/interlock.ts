@@ -14,6 +14,17 @@ export type ResetReason =
   | "clock"
   | "restart";
 
+export type SourceMessage = {
+  deliveryId: string;
+  logicalMessageId: string;
+  revisionId: string;
+  channelId: string;
+  threadRef: string;
+  actorId: string;
+  text: string;
+  updated: boolean;
+};
+
 export type Contract = {
   id: string;
   revision: number;

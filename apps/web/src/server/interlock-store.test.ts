@@ -46,6 +46,42 @@ test("one store owns the database and deliveries deduplicate", () => {
   }
 });
 
+test("bounded source context deduplicates delivery and preserves edits", () => {
+  const dir = mkdtempSync(join(tmpdir(), "interlock-source-"));
+  const store = new InterlockStore(join(dir, "state.db"));
+  const source = {
+    deliveryId: "Ev1",
+    logicalMessageId: "100",
+    revisionId: "100:r1",
+    channelId: "C1",
+    threadRef: "100",
+    actorId: "U1",
+    text: "Hold v42.",
+    updated: false,
+  };
+  try {
+    assert.equal(store.ingestSource(source), true);
+    assert.equal(store.ingestSource(source), false);
+    assert.equal(store.ingestSource({
+      ...source,
+      deliveryId: "Ev2",
+      revisionId: "100:r2",
+      text: "Hold v42 after checkout stays healthy.",
+      updated: true,
+    }), true);
+    assert.deepEqual(store.sourceContext("100"), [{
+      ...source,
+      deliveryId: "Ev2",
+      revisionId: "100:r2",
+      text: "Hold v42 after checkout stays healthy.",
+      updated: true,
+    }]);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("restart resets observation windows and preserves active holds", () => {
   const dir = mkdtempSync(join(tmpdir(), "interlock-restart-"));
   const path = join(dir, "state.db");

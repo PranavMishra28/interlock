@@ -11,6 +11,7 @@ import { DatabaseSync } from "node:sqlite";
 import {
   markDispatchUncertain,
   resetObservation,
+  type SourceMessage,
   type Workflow,
 } from "agent-core/interlock";
 
@@ -41,6 +42,17 @@ export class InterlockStore {
         observed_at INTEGER NOT NULL,
         value REAL NOT NULL,
         PRIMARY KEY (workflow_id, observed_at)
+      ) STRICT;
+      CREATE TABLE IF NOT EXISTS source_messages (
+        logical_id TEXT PRIMARY KEY,
+        revision_id TEXT NOT NULL UNIQUE,
+        delivery_id TEXT NOT NULL UNIQUE,
+        channel_id TEXT NOT NULL,
+        thread_ref TEXT NOT NULL,
+        actor_id TEXT NOT NULL,
+        text TEXT NOT NULL,
+        updated INTEGER NOT NULL,
+        received_at INTEGER NOT NULL
       ) STRICT;
     `);
     this.recover(Date.now());
@@ -136,6 +148,57 @@ export class InterlockStore {
     return this.database
       .prepare("SELECT observed_at AS observedAt, value FROM samples WHERE workflow_id = ? ORDER BY observed_at")
       .all(workflowId) as { observedAt: number; value: number }[];
+  }
+
+  ingestSource(message: SourceMessage, now = Date.now()) {
+    if (Buffer.byteLength(message.text) > 4_000) {
+      throw new Error("Source message exceeds retention limit.");
+    }
+    const result = this.database
+      .prepare(`
+        INSERT INTO source_messages (
+          logical_id, revision_id, delivery_id, channel_id, thread_ref,
+          actor_id, text, updated, received_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(logical_id) DO UPDATE SET
+          revision_id = excluded.revision_id,
+          delivery_id = excluded.delivery_id,
+          actor_id = excluded.actor_id,
+          text = excluded.text,
+          updated = excluded.updated,
+          received_at = excluded.received_at
+        WHERE excluded.updated = 1 AND excluded.revision_id != source_messages.revision_id
+      `)
+      .run(
+        message.logicalMessageId,
+        message.revisionId,
+        message.deliveryId,
+        message.channelId,
+        message.threadRef,
+        message.actorId,
+        message.text,
+        message.updated ? 1 : 0,
+        now,
+      );
+    return result.changes === 1;
+  }
+
+  sourceContext(threadRef: string, limit = 12): SourceMessage[] {
+    return (
+      this.database
+        .prepare(`
+          SELECT delivery_id AS deliveryId, logical_id AS logicalMessageId,
+            revision_id AS revisionId, channel_id AS channelId,
+            thread_ref AS threadRef, actor_id AS actorId, text,
+            updated
+          FROM source_messages
+          WHERE thread_ref = ?
+          ORDER BY received_at DESC
+          LIMIT ?
+        `)
+        .all(threadRef, Math.min(Math.max(limit, 1), 12)) as
+        (Omit<SourceMessage, "updated"> & { updated: number })[]
+    ).reverse().map((message) => ({ ...message, updated: message.updated === 1 }));
   }
 
   get(id: string): Workflow | null {

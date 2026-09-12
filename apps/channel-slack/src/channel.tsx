@@ -1,16 +1,15 @@
 import { createChannel } from "@copilotkit/channels";
-import { makeAgent, isSearchConfigured, isWorkplaceConfigured, WORKPLACE_CONTEXT } from "agent-core";
+import type { ChannelHandler } from "@copilotkit/channels";
 import { required } from "./env";
-import { IncidentCard, Timeline, welcomeMessage } from "./components";
-import { proposeAction, readThread, searchTheWeb } from "./tools";
+import { welcomeMessage } from "./components";
+import { interlockApproval } from "./approval";
+import { deliverAmbientMessage } from "./interlock";
 
-// Tools are registered only when their credential is present, so the agent is
-// never handed a tool that will fail when it calls it.
-const tools = [
-  readThread,
-  proposeAction,
-  ...(isSearchConfigured() ? [searchTheWeb] : []),
-];
+const ambientConfig = {
+  allowedChannelId: required("INTERLOCK_SLACK_CHANNEL_ID"),
+  coordinatorUrl: required("INTERLOCK_COORDINATOR_URL"),
+  token: required("INTERLOCK_COORDINATOR_TOKEN"),
+};
 
 export const channel = createChannel({
   // Must equal the Channel Code in Intelligence, character for character. A
@@ -23,47 +22,21 @@ export const channel = createChannel({
   // web requests and must be absent on a Channels-only runtime.
   identifyUser: "platform",
 
-  agent: makeAgent,
-  tools,
-  components: [IncidentCard, Timeline],
-
-  // Injected into the agent's prompt on every run.
-  context: [
-    
-    {
-      description: "Rendering",
-      value:
-        "You can draw native UI by calling incident_card or timeline. Prefer them over prose whenever the answer has structure.",
-    },
-    ...(isWorkplaceConfigured()
-      ? [{ description: "Workplace", value: WORKPLACE_CONTEXT }]
-      : []),
-    {
-      description: "Surface",
-      value:
-        "This is a chat thread in a channel people are actively working in. Assume others are reading and that some joined late.",
-    },
-  ],
-
-  // Managed Slack hides tool-call progress by default. Turning it on is worth it
-  // in a demo — the audience watches the agent search and think.
-  showToolStatus: true,
+  components: [interlockApproval(ambientConfig)],
+  store: { concurrency: "serial", dedupTtl: 300_000 },
 });
 
-// A mention subscribes the conversation, so the agent then follows along instead
-// of needing to be @-mentioned every single turn.
-channel.onMention(async ({ thread }) => {
-  await thread.subscribe();
-  await thread.runAgent();
-});
+const deliver: ChannelHandler = async ({
+  thread,
+  message,
+}) => {
+  await deliverAmbientMessage(message, thread.conversationKey, ambientConfig);
+};
 
-// Non-mentioned turns only ever reach onMessage — gate them on the flag or the
-// agent will answer every message in every channel it has been invited to.
-channel.onMessage(async ({ thread }) => {
-  if (await thread.isSubscribed()) {
-    await thread.runAgent();
-  }
-});
+// A mention has no special authority or activation semantics. Both hooks feed
+// the same bounded, deduplicated coordinator ingress.
+channel.onMention(deliver);
+channel.onMessage(deliver);
 
 channel.onWelcome(async ({ thread, platform }) => {
   await thread.post(welcomeMessage(platform));
