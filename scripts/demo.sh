@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
-# One command for the synthetic rehearsal: the seeded demo coordinator plus the
-# Control Room pointed at it. Mirrors scripts/dev.sh. Deliberately reads no
-# .env, because this path needs no Slack, model, or cloud credential.
+# One demo entrypoint. The current managed Slack attachment is mention-only, so
+# an ordinary message.channels event cannot reach Interlock; detect the attached
+# credentials and say why we are using the honest synthetic fallback.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+doctor="$(npm run doctor 2>/dev/null || true)"
+channel_status="$(npm run channel:status 2>/dev/null || true)"
+if grep -q 'SLACK attach creds     configured' <<<"$doctor" &&
+   grep -q '"slack": "attached"' <<<"$channel_status"; then
+  printf '\033[33m  Live Slack attached, but ordinary #incidents messages are not delivered by the managed mention-only adapter.\033[0m\n'
+  printf '\033[33m  Falling back to TEST INPUT — SYNTHETIC; do not present this as live Slack evidence.\033[0m\n'
+else
+  printf '\033[2m  Live Slack is unavailable. Using TEST INPUT — SYNTHETIC.\033[0m\n'
+fi
 
 cleanup() {
   local pid
