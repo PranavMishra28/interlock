@@ -389,12 +389,20 @@ before compaction.
   exact identity, so this pass verified the binding instead of duplicating the
   gate. Targeted re-checks: web typecheck clean and 44 web tests passed. No
   Cloud Run mutation, no Slack message, and no live-column change.
-- Socket Mode ambient path is implemented on `socket-mode-ambient` (not
-  yet on `main`). Managed CopilotKit Slack remains mention-only. Direct
-  listener uses `INTERLOCK_SLACK_APP_TOKEN` (`xapp-`) + bot token, maps
-  `message.channels` onto the existing Intent/coordinator/approval contract,
-  and posts the exact-revision card via `chat.postMessage`. Not LIVE_VERIFIED
-  until one real unmentioned #incidents message produces a workflow.
+- Socket Mode ambient path at `135761c5115d5831cb4cfae13e1d0ebcd9aa1498:998fdf107d1dc9bd598ae84be65cf57f75fca1a8`
+  on `socket-mode-ambient`, PR
+  [#13](https://github.com/PranavMishra28/interlock/pull/13); not yet on `main`.
+  The managed CopilotKit adapter forwards only bot mentions, so an ordinary
+  `message.channels` event never reaches ingress; that is a transport limit,
+  not an Interlock defect. The direct listener opens Slack's outbound
+  `apps.connections.open` websocket with `INTERLOCK_SLACK_APP_TOKEN` (`xapp-`),
+  maps each event onto the same `SourceMessage` ingress, bounded Intent,
+  coordinator proposal, and exact-revision approval contract, and posts the
+  card with `chat.postMessage`. Bots, other channels, deletions, and hidden
+  subtypes fail closed; edits keep their logical id. `scripts/check.sh` passed
+  on that clean committed tree; 28 channel-slack tests include the Socket Mode
+  proposal and approval paths. The live column stays unverified until one real
+  unmentioned `#incidents` message produces a workflow.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
