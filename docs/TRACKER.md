@@ -13,8 +13,10 @@ before compaction.
 - Inspected base: clean `main` at
   `88b6309b071978fb2ec585b683392a11d5283358` (PR #6 merge).
 - Working branch: `build-active`.
-- Last checkpoint: 2026-09-12 GCP Always Free budget recorded; live coordinator
-  loop and Slack restart-safe approval still unimplemented.
+- Last checkpoint: 2026-09-12 env-safety and budget checkpoint. `.env` is parsed
+  as inert data by both `check-env.sh` and `dev.sh` via shared
+  `scripts/load-env.sh`; `npm run doctor` reports configured/missing only;
+  `.env.example` is reduced to the variables Interlock actually reads.
 - Authorization evidence: the maintainer confirmed the official build opening
   and authorized BUILD_ACTIVE in this session. Scope is the PLAN MVP and
   personal accounts only. GCP spend is recorded as **$0 Always Free** (see
@@ -79,14 +81,29 @@ before compaction.
   synthetic label. The subsequent full `bash scripts/check.sh` passed on that
   clean checkpoint. CORE-1, COORD-1, UI-1, and REL-1 are complete; no eligible
   offline work remains before the capability-gated live nodes.
+- Current completion evidence: `bash scripts/check.sh` passed on the clean
+  committed tree `5873d84:5a63d1fc2fea6d2ba3a1c894070cc332dbf005fa`, including
+  the 59-test inherited verify (env preflight, secret-safe doctor, MCP stdio),
+  all workspace typechecks, the web build, phase-guard negatives, hook
+  fixtures, canonical doc links, workflow policy, and action pins. No external
+  account, paid call, or deployment was used.
+- Live-gap audit correction: the coordinator process is HTTP + SQLite only. It
+  never observes health, never refuses a real promotion attempt, never
+  constructs `CloudRunAdapter`, and never continues autonomously; `observe`,
+  `requestPromotion`, and `continue` are called only from tests. Slack approval
+  cards are posted as pre-rendered IR, so a listener restart cannot rebuild the
+  button. SLACK-1 and CLOUD-1 `DONE_IMPL` therefore overstate the process; the
+  library functions pass their own tests but are not wired into the long-lived
+  process.
 - Blockers: dedicated personal GCP project still missing (`prod-457713` is
   not usable). Slack channel install missing. OpenAI budget unrecorded.
   Coordinator process does not yet observe/enforce/continue. Approval cards
   do not survive listener restart. Inherited dependency exposure still blocks
   public hosting.
-- Exact next action: keep wiring the coordinator observer/promote loop and
-  restart-safe Slack approvals offline; wait for a dedicated personal
-  `us-central1` project the Gmail identity can describe.
+- Exact next action: wire the coordinator observe/refuse/continue loop and the
+  restart-safe registered approval component offline, then re-run the targeted
+  tests and the full check; wait for a dedicated personal `us-central1` project
+  the Gmail identity can describe before any live GCP step.
 
 ## Invariant summary
 
@@ -125,9 +142,9 @@ may be useful but cannot make the original criterion green.
 | COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
 | UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `ca2dc7c:c556474499785fda6be83ac2a1d01f2d6d469a74` | DONE_IMPL | NOT_REQUIRED |
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
-| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | ACCESS_REQUIRED |
+| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | IN_PROGRESS (ingress/authority pass; restart cannot rebuild the approval button) | ACCESS_REQUIRED |
 | MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | KEY_REQUIRED |
-| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | ACCESS_REQUIRED |
+| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | IN_PROGRESS (adapter contract passes; process never constructs it, never refuses a real attempt, never continues) | ACCESS_REQUIRED |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
 
