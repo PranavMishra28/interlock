@@ -1,4 +1,5 @@
 import {
+  emptyState,
   fixtureStates,
   loadSnapshot,
   type FixtureState,
@@ -138,7 +139,10 @@ export default async function Home({
           </section>
         </>
       ) : (
-        <section className="cr-card"><h2>No active contract</h2><p>The coordinator is connected and has no unresolved workflow.</p></section>
+        <section className="cr-card">
+          <h2>{emptyState(snapshot.coordinator).title}</h2>
+          <p>{emptyState(snapshot.coordinator).body}</p>
+        </section>
       )}
     </main>
   );

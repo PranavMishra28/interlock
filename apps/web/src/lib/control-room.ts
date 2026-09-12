@@ -38,6 +38,27 @@ export const fixtureStates: FixtureState[] = [
   "retired",
 ];
 
+/**
+ * Copy for the no-contract case. An unreachable coordinator must never be
+ * reported as an absence of decisions: the page cannot tell the difference, and
+ * claiming it can is the one thing the Control Room must not do.
+ */
+export function emptyState(coordinator: { connected: boolean; reason?: string }) {
+  if (coordinator.connected) {
+    return {
+      title: "No active contract",
+      body: "The coordinator is connected and has no unresolved workflow.",
+    };
+  }
+  return {
+    title: "Coordinator unavailable",
+    body:
+      "This page cannot show decision state, and the absence of a contract here " +
+      "is not evidence that none exists." +
+      (coordinator.reason ? ` Reported: ${coordinator.reason}.` : ""),
+  };
+}
+
 export function syntheticSnapshot(
   fixture: FixtureState = "observing",
 ): ControlRoomSnapshot {

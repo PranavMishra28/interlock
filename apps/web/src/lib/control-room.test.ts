@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fixtureStates, loadSnapshot, syntheticSnapshot } from "./control-room";
+import {
+  emptyState,
+  fixtureStates,
+  loadSnapshot,
+  syntheticSnapshot,
+} from "./control-room";
 
 test("synthetic Control Room state is explicit and fail-closed", () => {
   const snapshot = syntheticSnapshot();
@@ -48,5 +53,31 @@ test("configured coordinator failure never retains synthetic live evidence", asy
     globalThis.fetch = priorFetch;
     if (priorUrl == null) delete process.env.INTERLOCK_COORDINATOR_URL;
     else process.env.INTERLOCK_COORDINATOR_URL = priorUrl;
+  }
+});
+
+test("an unreachable coordinator is never reported as an absence of decisions", () => {
+  const offline = emptyState({ connected: false, reason: "Connection refused" });
+  assert.match(offline.title, /unavailable/i);
+  assert.match(offline.body, /not evidence that none exists/);
+  assert.match(offline.body, /Connection refused/);
+  assert.doesNotMatch(offline.body, /has no unresolved workflow/);
+
+  const online = emptyState({ connected: true });
+  assert.match(online.body, /has no unresolved workflow/);
+});
+
+test("a coordinator that cannot be reached yields a disconnected empty snapshot", async () => {
+  const previous = process.env.INTERLOCK_COORDINATOR_URL;
+  // Port 1 is reserved and never listening.
+  process.env.INTERLOCK_COORDINATOR_URL = "http://127.0.0.1:1";
+  try {
+    const snapshot = await loadSnapshot();
+    assert.equal(snapshot.coordinator.connected, false);
+    assert.equal(snapshot.workflow, null);
+    assert.ok(snapshot.coordinator.reason);
+  } finally {
+    if (previous === undefined) delete process.env.INTERLOCK_COORDINATOR_URL;
+    else process.env.INTERLOCK_COORDINATOR_URL = previous;
   }
 });
