@@ -23,6 +23,9 @@ Observed 2026-09-12 PDT:
 | GitHub CLI | 2.96.0; personal `PranavMishra28` session |
 | gitleaks | installed |
 | gcloud | installed, but no authorized personal Interlock project |
+| jq | `/opt/homebrew/bin/jq`; required by project hook scripts |
+| Cursor IDE | 3.20.17; trusted project hooks supported |
+| Cursor Agent CLI | 2026.03.30-a5d3e17; resume flags available; not authenticated |
 | Trigger.dev CLI / SDK | absent and deferred |
 
 ```bash
@@ -32,13 +35,35 @@ bash scripts/check.sh
 
 `check.sh` requires no credential or paid call. It runs inherited strict
 typechecks/tests/MCP stdio verification, the inherited web build, the committed
-phase/scope guard and negative cases, and the full-SHA action-pin check. There
-is no inherited formatter/linter; do not add coverage theater.
+phase/scope guard and its negative cases, the hook fixtures, the canonical
+document-link check, the workflow trigger policy and the full-SHA action-pin
+check, then records current-tree completion evidence. There is no inherited
+formatter/linter; do not add coverage theater.
 
 Key inherited versions: Next 15.5.25, React 19.2.8, TypeScript 5.9.3,
 `@copilotkit/runtime` 1.70.3, `@copilotkit/react-core` 1.70.1,
 `@copilotkit/channels` 0.9.2, `@ag-ui/client` 0.0.59 (root override),
 `@ai-sdk/openai` 3.0.109, `tsx` 4.23.13.
+
+Project-local Cursor hooks are configured in `.cursor/hooks.json` for trusted
+IDE workspaces. The current IDE loaded and ran the safe shell hook; direct
+fixtures verify session context, pre-compaction notice, deny/ask/allow
+decisions, interruption handling, one-loop completion gating, and
+current-tree-bound check evidence. A new session is still required to observe
+`sessionStart`; `preCompact` only notifies and cannot block compaction. Hooks are
+not a sandbox and cannot restart a process. Supported manual recovery is IDE
+chat reopen or `cursor-agent --resume/--continue`; the installed CLI is not
+authenticated, and no login was performed. Hook decisions are appended to
+`$(git rev-parse --git-dir)/interlock-hook-events`, which stays out of Git and
+records the decision only, never command text.
+
+Known control limits, stated rather than implied: branch protection can require
+the `verify` check, but this personal repository has no organization-level
+required-workflow control, so a pull request could in principle edit
+`.github/workflows/ci.yml` or `scripts/check.sh`. The trusted base-branch guard
+step re-runs `scope-audit.sh` from the base commit, which is what makes the
+phase guard itself non-editable by a pull request; workflow edits remain a
+review responsibility.
 
 ## Chosen-MVP readiness
 
@@ -48,10 +73,10 @@ platform’s secret store. A package or placeholder is not authentication.
 | Capability | Account/package | Purpose | Credential names and expected location | Access prerequisite | Safe activation check | Status |
 |---|---|---|---|---|---|---|
 | Local coordinator + SQLite | Node 22; SQLite choice made at P0 | sole durable workflow/store | `INTERLOCK_DB_PATH` in ignored `.env`; no secret | writable local directory; one coordinator owner | create/reopen disposable DB; prove second owner fails; restart recovery test | **OFFLINE_READY** (design only) |
-| Web operator identity | existing Next/CopilotKit web + local coordinator | guaranteed surface and approval identity | `INTERLOCK_OPERATOR_TOKEN`, `INTERLOCK_SESSION_SECRET`, `INTERLOCK_OPERATOR_ID` in ignored `.env`, server-only | loopback-only browser/coordinator | wrong token rejected; correct session maps fixed operator ID; anonymous/display-name approval rejected | **KEY_REQUIRED** |
+| Control Room session | existing Next/CopilotKit web + local coordinator | evidence display and authenticated test-only controls, never Slack approval | `INTERLOCK_OPERATOR_TOKEN`, `INTERLOCK_SESSION_SECRET`, `INTERLOCK_OPERATOR_ID` in ignored `.env`, server-only | loopback-only browser/coordinator | wrong token rejected; correct session maps fixed operator ID; anonymous/display-name mutation rejected; test controls labeled | **KEY_REQUIRED** |
 | OpenAI model | inherited runtime / `@ai-sdk/openai` | bounded interpretation; optional evidence narration | `OPENAI_API_KEY`, `MODEL`, `MODEL_PROVIDER=openai` in ignored `.env` | personal account/project and separate API credits/budget | at P0 list models; confirm structured/tool behavior; one bounded call | **KEY_REQUIRED** |
-| CopilotKit web | inherited packages | page context, chat, UI/runtime transport | inherited OpenAI names above | model key for live chat | offline build/info route already exercised; real round trip pending | **OFFLINE_READY** |
-| Slack option | inherited `@copilotkit/channels` path | optional real conversation surface | `INTELLIGENCE_API_KEY`, `CHANNEL_CODE` in ignored `.env`; personal Slack app/workspace installation owned by the maintainer | personal workspace/app, generated manifest, required scopes/events | within first 20 minutes: mention subscribes; ordinary subscribed reply arrives once; stable platform actor; bot event suppressed; exact-revision approval callback arrives once | **ACCESS_REQUIRED** |
+| CopilotKit web | inherited packages | base for the future evidence-only Control Room | inherited OpenAI names above only for starter chat | model key for inherited live chat | offline build/info route exercised; no Interlock round trip exists | **OFFLINE_READY** |
+| Slack primary | inherited `@copilotkit/channels` transport, behavior replaced after P0 | ambient conversation and exact-owner approval in one authorized incident channel | `INTELLIGENCE_API_KEY`, `CHANNEL_CODE`, `INTERLOCK_SLACK_WORKSPACE_ID`, `INTERLOCK_SLACK_CHANNEL_ID`, owner ID mapping in ignored server config | personal workspace/app, generated manifest, channel install, required scopes/events/interactivity | brand-new unmentioned top-level message and unmentioned reply each arrive once; edits/thread provenance retained; stable actor; bot/duplicate suppressed; configured owner’s exact-revision button callback arrives once | **ACCESS_REQUIRED** |
 | Cloud Run target | gcloud/Google APIs; no new package selected | one prepared revision promotion and independent read-back | personal named gcloud config; ADC impersonating dedicated execution SA; `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_REGION`, `INTERLOCK_TARGET_SERVICE`, `INTERLOCK_TARGET_REVISION` in ignored `.env` | explicit budget; personal project/billing; APIs; target-scoped IAM; event-created target/revision | confirm active personal project without printing tokens; read service; denied non-allowlisted target; promote allowed revision; read routing and fresh health | **ACCESS_REQUIRED** |
 | Local fallback target | existing local runtime chosen at P0 | honest fallback if cloud access fails | local target URL in ignored `.env` | genuinely running local process | dispatch, read-back, restart/reset; UI labels “local” | **OFFLINE_READY** (not built) |
 | Trigger.dev / Firestore / executor fleet / Auth0 | not installed | future hosted topology | none for MVP | separate reviewed design | none | **DEFERRED** |
@@ -61,11 +86,13 @@ resolve actual model IDs and supported API behavior, cap calls/tokens/retries,
 and append a cost record without exposing the key. Coding subscriptions do not
 imply API credits.
 
-Slack scope at P0: one visibly opted-in thread. Confirm generated event
-subscriptions and only required history/mention/interactivity permissions.
-Store platform workspace/user IDs, suppress bot/subtype loops, deduplicate
-stable event/delivery IDs, and validate approval against both actor and exact
-proposal revision. The inherited button is not authorization.
+Slack scope after the committed P0 transition: exactly one
+administrator-authorized incident channel. Confirm generated event
+subscriptions and only required channel/history/interactivity permissions.
+Store platform workspace/channel/user IDs, suppress bot/subtype loops,
+deduplicate stable event/delivery/proposal IDs, preserve reply/edit provenance,
+and validate an explicit button against actor and exact proposal revision. The
+inherited mention subscription and demo button are not acceptance evidence.
 
 Cloud owner action at P0: create/select a dedicated personal project only after
 budget approval; isolate it in a named gcloud configuration; create the target

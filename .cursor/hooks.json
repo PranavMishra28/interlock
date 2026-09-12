@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/context.sh",
+        "timeout": 5
+      }
+    ],
+    "preCompact": [
+      {
+        "command": ".cursor/hooks/context.sh",
+        "timeout": 5
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/before-shell.sh",
+        "timeout": 5,
+        "failClosed": true
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/stop.sh",
+        "timeout": 10,
+        "loop_limit": 1
+      }
+    ]
+  }
+}

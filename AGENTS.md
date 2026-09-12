@@ -19,6 +19,7 @@ stashes, patches, or another repo.
 
 - Status/next action: `docs/TRACKER.md`
 - Product/topology/invariants: `docs/PLAN.md`
+- Control Room requirements: `docs/DESIGN.md`
 - Versions/access/risks: `docs/READINESS.md`
 - Build-day prompts/run/reset: `docs/RUNBOOK.md`
 - Inherited vs event work: `HACKATHON_PROVENANCE.md`
@@ -28,6 +29,10 @@ stashes, patches, or another repo.
 Old assistant summaries are not authority. On resume, read this file, TRACKER,
 relevant PLAN sections, and actual Git state. One lead writes shared status;
 reviewers return findings only.
+
+Project hooks are reminders and deterministic command gates, not a sandbox or
+crash recovery. Resume a stopped process through the supported IDE/CLI session
+mechanism and re-read repository evidence.
 
 ## Boundaries
 

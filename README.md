@@ -1,13 +1,17 @@
 # Interlock
 
-Interlock is planned to turn one operational decision in an opted-in workspace
-into an approved temporary constraint, then observe, perform one authorized
-continuation, verify it, and retain evidence.
+Ambient operational constraints for Slack, with explicit approval and verified
+outcomes.
 
-**Status: PREP_ONLY. Interlock is not implemented.** This public repository
-contains an unchanged inherited CopilotKit starter plus generic CI, security,
-provenance, and build-day planning. The inherited incident chat is starter
-evidence, not an Interlock demo.
+**Pre-build status: planned, not implemented.** The runnable web and Slack
+examples here are inherited CopilotKit starter code, not an Interlock demo.
+
+Interlock is planned to notice an operational decision in one authorized Slack
+incident channel, route an exact temporary hold to the configured owner, enforce
+one controlled operation, observe the stated recovery condition, perform only
+the approved continuation, verify the real target, and retain the receipt.
+
+## Starter quickstart
 
 Requires Node 22 (`.nvmrc`) and npm 10:
 
@@ -16,19 +20,33 @@ npm ci --no-audit --no-fund
 bash scripts/check.sh
 ```
 
-The check runs inherited typechecks/tests/MCP verification, builds the web
-workspace, validates the committed phase and preparation boundary, runs guard
-negative cases, and verifies full-SHA GitHub Action pins. It needs no key or
-paid call.
+The check is offline and secret-free. It verifies the inherited workspaces and
+web build plus the repository phase, CI, and developer-harness controls.
+
+To run the inherited web example locally:
+
+```bash
+cp .env.example .env
+# Set a personal model provider/key in .env.
+npm run dev:web
+```
+
+Open `http://localhost:3100`. Keep it local: unresolved inherited dependency
+alerts and unauthenticated starter routes block public exposure.
+
+## Build-day entrypoint
 
 Start/resume with [`AGENTS.md`](AGENTS.md) and
-[`docs/TRACKER.md`](docs/TRACKER.md). Architecture and invariants:
-[`docs/PLAN.md`](docs/PLAN.md). Readiness and owner actions:
-[`docs/READINESS.md`](docs/READINESS.md). Build-day prompts:
-[`docs/RUNBOOK.md`](docs/RUNBOOK.md).
+[`docs/TRACKER.md`](docs/TRACKER.md), then use the single kickoff in
+[`docs/RUNBOOK.md`](docs/RUNBOOK.md). Product scope and invariants live in
+[`docs/PLAN.md`](docs/PLAN.md); the planned Control Room is in
+[`docs/DESIGN.md`](docs/DESIGN.md); access and security gates are in
+[`docs/READINESS.md`](docs/READINESS.md) and [`SECURITY.md`](SECURITY.md).
 
-Inherited/event ownership is recorded in
-[`HACKATHON_PROVENANCE.md`](HACKATHON_PROVENANCE.md). The immutable inherited
-import is `79b036635c01d932374bed1013b901283f421096`; the annotated pre-event
-baseline tag resolves to `76897ddd227c4d3f06e35063679e7189d075f747`.
-Inherited code retains its MIT license in [`LICENSE`](LICENSE).
+Detailed inheritance and event-work boundaries are recorded discreetly in
+[`HACKATHON_PROVENANCE.md`](HACKATHON_PROVENANCE.md).
+
+## License
+
+Inherited starter code remains MIT licensed under [`LICENSE`](LICENSE).
+Credit: [CopilotKit Agents Everywhere starter kit](https://github.com/CopilotKit/agents-everywhere-starter-kit).
