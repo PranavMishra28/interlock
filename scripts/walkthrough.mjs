@@ -40,10 +40,9 @@ async function preflight() {
   console.log(`Preflight passed (offline). Confidential notes: ${artifact}`);
   console.log("No service, credential check, dev server, coordinator, or network call ran.");
   console.log("\nSynthetic product-logic story (no Slack channel and no people talking):");
-  console.log("  Terminal A: npm run demo --workspace web -- --reset");
-  console.log("  Terminal B: INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web");
+  console.log("  One command: npm run demo   (Ctrl-C stops both; no credential needed)");
   console.log("  Open: http://localhost:3100");
-  console.log("  Terminal A beats: wrong actor refused; wrong revision refused; exact owner");
+  console.log("  Terminal beats: wrong actor refused; wrong revision refused; exact owner");
   console.log("  approved; active hold refused promotion; synthetic recovery; RETIRED.");
   console.log("  Control Room: TEST INPUT — SYNTHETIC, elapsed window, resets, v42 receipt.");
   console.log("\nLive SLACK-1 only: use the one channel named by INTERLOCK_SLACK_CHANNEL_ID.");

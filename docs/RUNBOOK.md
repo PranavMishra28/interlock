@@ -239,17 +239,19 @@ General idea, in six primitives:
 
 ### 1. Local synthetic rehearsal
 
-In terminal A:
+One command starts both processes and needs no credential:
 
 ```bash
-npm run demo --workspace web -- --reset
+npm run demo
 ```
 
-In terminal B:
-
-```bash
-INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web
-```
+It resets the demo store, starts the seeded coordinator on `127.0.0.1:4318`,
+waits for that port, then starts the Control Room already pointed at it.
+`Ctrl-C` stops both. If either port is already held, it names the port and pid
+and exits instead of failing mid-story. Terminals A and B below are therefore
+one terminal; use `npm run demo --workspace web -- --reset` and
+`INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web` separately
+only when a surface must be restarted on its own.
 
 Open `http://localhost:3100`. Expected: the page says **TEST INPUT —
 SYNTHETIC**, begins in an unhealthy `ACTIVE_HOLD`, records synthetic recovery,
@@ -429,21 +431,17 @@ healthy window and permits one continuation. Both the coordinator snapshot and
 Control Room identify the evidence as synthetic. It requires no Slack channel,
 Slack credential, or person posting messages.
 
-Start from a known local demo state:
+Start both surfaces from a known local demo state:
 
 ```bash
-npm run demo --workspace web -- --reset
+npm run demo
 ```
 
-In another terminal, point the Control Room at that loopback coordinator:
-
-```bash
-INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web
-```
-
-Open `http://localhost:3100`. Re-running the first command with `--reset`
-removes only the local demo database and lock sidecars before reseeding it.
-Without `--reset`, the persisted demo state is reused. This is local synthetic
+Open `http://localhost:3100`. That command always resets, which removes only the
+local demo database and lock sidecars before reseeding it. To reuse persisted
+demo state instead, run `npm run demo --workspace web` without `--reset` and
+start the Control Room with
+`INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web`. This is local synthetic
 workflow and restart/reset evidence only; it is not live Slack delivery or
 approval, live model behavior, or GCP/Cloud Run evidence.
 

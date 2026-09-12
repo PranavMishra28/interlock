@@ -342,6 +342,12 @@ before compaction.
   `bash scripts/check.sh` passed on the clean cleanup commit
   `db1eb5c3ed729981e8ddf803d4e2d19f89a0828d:e6d5b0d9d1c1c32677d5b045cdc9f7eb8c5a0789`;
   the walkthrough also reached one synthetic retained `v42` receipt.
+- Demo presentation follow-up: the supplied near-touching-hands reference is
+  not a repository asset. The sole tracked brand image remains
+  `apps/web/src/app/icon.svg`, shared by Next.js metadata and the product bar;
+  its small-size silhouette was simplified around a larger fingertip gap.
+  `npm run demo` now starts the labeled synthetic coordinator and Control Room
+  together; the separate commands remain documented for recording each surface.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
