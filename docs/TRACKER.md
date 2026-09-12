@@ -390,8 +390,8 @@ before compaction.
   gate. Targeted re-checks: web typecheck clean and 44 web tests passed. No
   Cloud Run mutation, no Slack message, and no live-column change.
 - Socket Mode ambient path at `135761c5115d5831cb4cfae13e1d0ebcd9aa1498:998fdf107d1dc9bd598ae84be65cf57f75fca1a8`
-  on `socket-mode-ambient`, PR
-  [#13](https://github.com/PranavMishra28/interlock/pull/13); not yet on `main`.
+  merged to `main` as `7c1ed40` through green `verify` on PR
+  [#13](https://github.com/PranavMishra28/interlock/pull/13).
   The managed CopilotKit adapter forwards only bot mentions, so an ordinary
   `message.channels` event never reaches ingress; that is a transport limit,
   not an Interlock defect. The direct listener opens Slack's outbound
@@ -408,9 +408,10 @@ before compaction.
   post or approve a live Slack decision and therefore did not rehearse the
   complete Slack-to-receipt flow. The existing bot may still need the one human
   `/invite @Interlock` action in the configured channel.
-- Exact next action: merge Socket Mode PR (`socket-mode-ambient`) after
-  `verify`, then `npm run demo` with `INTERLOCK_SLACK_APP_TOKEN` set and post
-  one unmentioned #incidents message. Do not @-mention the bot. Do not present
+- Exact next action: clear the live `checkout` fault with
+  `node --env-file=.env scripts/walkthrough.mjs --fault off`, then `npm run
+  demo` with `INTERLOCK_SLACK_APP_TOKEN` set and post one unmentioned
+  #incidents message. Do not @-mention the bot. Do not present
   the managed adapter or the synthetic walkthrough as live Slack evidence.
   Video, social publication, and portal submission remain human-only.
 
