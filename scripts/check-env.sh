@@ -89,9 +89,17 @@ if [ "${1:-}" = --doctor ]; then
   printf '%-22s %s\n' "COPILOTKIT_*" "$copilotkit"
   printf '%-22s %s\n' "SLACK_* identities" "$slack"
   printf '%-22s %s\n' "SLACK attach creds" "$slack_credentials"
+  case "${INTERLOCK_SLACK_APP_TOKEN:-${SLACK_APP_TOKEN:-${INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_APP_TOKEN:-}}}" in
+    xapp-*) slack_socket=configured ;;
+    *) slack_socket=missing ;;
+  esac
+  printf '%-22s %s\n' "SLACK Socket Mode" "$slack_socket"
   printf '%-22s %s\n' "GCP identity" "$gcp"
-  [ "$slack_credentials" = configured ] ||
+  if [ "$slack_socket" = configured ]; then
+    printf '\nSocket Mode token is present. Unmentioned #incidents messages use the direct listener, not the managed mention-only adapter.\n'
+  elif [ "$slack_credentials" != configured ]; then
     printf '\nSlack attach credentials are absent, so the managed Channel cannot\nbind and no message can enter ingress. Confirm with: npm run channel:status\n'
+  fi
   exit 0
 fi
 
@@ -181,9 +189,6 @@ if [ -f .env ]; then
     if [ -n "${INTELLIGENCE_GATEWAY_WS_URL:-}" ] && [ -z "${INTELLIGENCE_API_URL:-}" ]; then
       fail "INTELLIGENCE_GATEWAY_WS_URL is set without INTELLIGENCE_API_URL. They are separate hosts — override both or neither."
     fi
-    case "${SLACK_APP_TOKEN:-}" in
-      xapp-*) fail "SLACK_APP_TOKEN is set. Socket Mode belongs only to the direct-adapter path; a managed Channel needs no app-level token. Remove it." ;;
-    esac
   else
     warn "Slack is not configured — the agent will not appear there. Run: npm run channel:setup"
   fi

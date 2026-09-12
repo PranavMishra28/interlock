@@ -176,14 +176,13 @@ Choose one path; they prove different things:
   → Closure story with labeled synthetic input and must never be cited as live
   Slack evidence.
 - **Live SLACK-1 evidence:** use exactly the existing incident channel whose ID
-  is `INTERLOCK_SLACK_CHANNEL_ID`. Do not create another channel, managed
-  Intelligence Channel, or Slack app. Put the bot token in
-  `INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_BOT_TOKEN` and the signing secret in
-  `INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_SIGNING_SECRET` in the approved ignored
-  `.env`, attach the existing managed Channel, and invite the existing bot once
-  with `/invite @Interlock`. One human then posts one ordinary **unmentioned**
-  message. No mention and no group of people acting out a conversation are
-  needed.
+  is `INTERLOCK_SLACK_CHANNEL_ID`. Do not create another channel or Slack app.
+  Put `INTERLOCK_SLACK_APP_TOKEN` (`xapp-…`, Socket Mode, `connections:write`)
+  and `INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_BOT_TOKEN` in ignored `.env`.
+  Enable Socket Mode on the Slack app and subscribe the bot to `message.channels`.
+  Invite `@Interlock` once. Then `npm run demo` starts the live stack; post one
+  ordinary **unmentioned** message. The managed CopilotKit adapter is mention-only
+  and must not be cited as ambient success.
 
 Run this once before either walkthrough:
 
