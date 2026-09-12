@@ -150,10 +150,11 @@ export class CloudRunAdapter implements TargetAdapter {
       value?: number;
       observedAt?: number;
     };
-    const route = service.trafficStatuses?.find(
-      ({ revision }) => revision === this.config.revision,
+    const route = service.trafficStatuses?.reduce((highest, candidate) =>
+      (candidate.percent ?? -1) > (highest.percent ?? -1) ? candidate : highest
     );
     if (
+      typeof route?.revision !== "string" ||
       typeof route?.percent !== "number" ||
       typeof health.value !== "number" ||
       typeof health.observedAt !== "number"
@@ -161,7 +162,7 @@ export class CloudRunAdapter implements TargetAdapter {
       throw new Error("Target verification response is incomplete.");
     }
     return {
-      revision: this.config.revision,
+      revision: route.revision,
       trafficPercent: route.percent,
       healthValue: health.value,
       observedAt: health.observedAt,

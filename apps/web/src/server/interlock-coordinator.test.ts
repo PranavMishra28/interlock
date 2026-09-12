@@ -3,7 +3,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { Contract, TrustedResource } from "agent-core/interlock";
+import {
+  claim,
+  type Contract,
+  type TrustedResource,
+} from "agent-core/interlock";
 import {
   InterlockCoordinator,
   type TargetAdapter,
@@ -129,12 +133,14 @@ test("uncertain applied effect reconciles by read-back without repeating", async
   }
 });
 
-test("uncertain non-effect becomes ready only after read-back", async () => {
+test("uncertain non-effect remains intervention and is never dispatched twice", async () => {
   const fixture = setup();
   try {
     ready(fixture.coordinator, fixture.contract, fixture.base);
+    let promotions = 0;
     const adapter: TargetAdapter = {
       async promote() {
+        promotions += 1;
         throw new Error("dispatch failed");
       },
       async read() {
@@ -151,8 +157,18 @@ test("uncertain non-effect becomes ready only after read-back", async () => {
       adapter,
       fixture.base + 1_120,
     );
-    assert.equal(reconciled.status, "READY");
-    assert.equal(reconciled.operation, undefined);
+    assert.equal(reconciled.status, "NEEDS_INTERVENTION");
+    assert.equal(reconciled.verification?.observedRevision, "v41");
+    assert.equal(reconciled.operation?.uncertain, true);
+    assert.equal(
+      (await fixture.coordinator.continue(
+        fixture.contract.id,
+        adapter,
+        fixture.base + 1_130,
+      )).status,
+      "NEEDS_INTERVENTION",
+    );
+    assert.equal(promotions, 1);
   } finally {
     fixture.close();
   }
@@ -241,5 +257,71 @@ test("conflicting proposal and stale second approval fail closed", () => {
     );
   } finally {
     fixture.close();
+  }
+});
+
+test("expired unapproved proposal no longer blocks a new workflow", () => {
+  const fixture = setup();
+  try {
+    fixture.coordinator.propose({
+      ...fixture.contract,
+      proposalExpiresAt: fixture.base + 10,
+    }, fixture.base);
+    const replacement = fixture.coordinator.propose({
+      ...fixture.contract,
+      id: "hold-43",
+      sourceDeliveryId: "delivery-43",
+    }, fixture.base + 11);
+    assert.equal(replacement.status, "PROPOSED");
+  } finally {
+    fixture.close();
+  }
+});
+
+test("restart reconciles an uncertain dispatch without promoting again", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "interlock-reconcile-"));
+  const path = join(dir, "state.db");
+  let store = new InterlockStore(path);
+  try {
+    let coordinator = new InterlockCoordinator(store, trusted);
+    const base = Date.now();
+    const contract: Contract = {
+      id: "hold-restart",
+      revision: 1,
+      sourceDeliveryId: "delivery-restart",
+      sourceMessageRef: "C1:100",
+      ...trusted,
+      threshold: 1,
+      windowMs: 1_000,
+      maxSampleAgeMs: 5_000,
+      maxSampleGapMs: 600,
+      proposalExpiresAt: base + 60_000,
+    };
+    const state = ready(coordinator, contract, base);
+    store.save(claim(state, trusted, "op-before-crash", base + 1_120));
+    store.close();
+
+    store = new InterlockStore(path);
+    coordinator = new InterlockCoordinator(store, trusted);
+    let promotions = 0;
+    const recovered = await coordinator.continue(contract.id, {
+      async promote() {
+        promotions += 1;
+      },
+      async read() {
+        return {
+          revision: "v42",
+          trafficPercent: 100,
+          healthValue: 0.2,
+          observedAt: Date.now(),
+        };
+      },
+    });
+    assert.equal(recovered.status, "RETIRED");
+    assert.equal(recovered.receipt?.operationId, "op-before-crash");
+    assert.equal(promotions, 0);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -131,8 +131,8 @@ export default async function Home({
             <div><p className="cr-label">Expected versus observed</p><h2 id="receipt-title">Verification receipt</h2></div>
             <dl className="cr-facts cr-facts--receipt">
               <div><dt>Expected revision</dt><dd>{workflow.contract.candidateRevision}</dd></div>
-              <div><dt>Observed revision</dt><dd>{workflow.receipt?.observedRevision ?? "Pending"}</dd></div>
-              <div><dt>Effective routing</dt><dd>{workflow.receipt ? `${workflow.receipt.trafficPercent}%` : "Pending"}</dd></div>
+              <div><dt>Observed revision</dt><dd>{workflow.receipt?.observedRevision ?? workflow.verification?.observedRevision ?? "Pending"}</dd></div>
+              <div><dt>Effective routing</dt><dd>{workflow.receipt ? `${workflow.receipt.trafficPercent}%` : workflow.verification ? `${workflow.verification.trafficPercent}%` : "Pending"}</dd></div>
               <div><dt>Operation</dt><dd><code>{workflow.operation?.id ?? "Not claimed"}</code></dd></div>
             </dl>
           </section>

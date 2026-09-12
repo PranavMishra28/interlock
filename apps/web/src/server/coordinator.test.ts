@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -140,6 +141,76 @@ test("authenticated Slack ingress accepts one exact-channel delivery", async () 
   }
 });
 
+test("proposal endpoint binds latest attributed source to trusted resource", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "interlock-proposal-"));
+  const store = new InterlockStore(join(dir, "state.db"));
+  store.ingestSource({
+    deliveryId: "Ev1",
+    logicalMessageId: "100",
+    revisionId: "100:r1",
+    workspaceId: "T1",
+    channelId: "C1",
+    threadRef: "100",
+    actorId: "U1",
+    text: "Hold v42 until health is at most 1 for 60 seconds.",
+    updated: false,
+  });
+  const server = createCoordinator(store, {
+    ingressToken: "test-token",
+    allowedWorkspaceId: "T1",
+    allowedChannelId: "C1",
+    workflowCoordinator: new InterlockCoordinator(store, {
+      resourceId: "checkout",
+      targetUrl: "https://checkout.example.test/health",
+      candidateRevision: "v42",
+      ownerId: "U-OWNER",
+    }),
+    now: () => 1_000,
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const address = server.address();
+    assert(address && typeof address === "object");
+    const url = `http://127.0.0.1:${address.port}/v1/slack/proposals`;
+    const send = (workspaceId: string, candidateRevision = "v42") => fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer test-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        workspaceId,
+        channelId: "C1",
+        resourceId: "checkout",
+        candidateRevision,
+        threadRef: "100",
+        threshold: 1,
+        windowMs: 60_000,
+      }),
+    });
+    assert.equal((await send("T2")).status, 400);
+    assert.equal((await send("T1", "v99")).status, 400);
+    const created = await send("T1");
+    assert.equal(created.status, 201);
+    const proposal = await created.json() as {
+      workflowId: string;
+      resourceId: string;
+      candidateRevision: string;
+      cardToken: string;
+    };
+    assert.equal(proposal.resourceId, "checkout");
+    assert.equal(proposal.candidateRevision, "v42");
+    assert.equal(proposal.cardToken.length, 64);
+    assert.equal(store.get(proposal.workflowId)?.contract.ownerId, "U-OWNER");
+    assert.equal((await send("T1")).status, 200);
+    assert.equal(store.list().length, 1);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("Slack approval endpoint delegates exact actor and revision authority", async () => {
   const dir = mkdtempSync(join(tmpdir(), "interlock-approval-"));
   const store = new InterlockStore(join(dir, "state.db"));
@@ -174,6 +245,9 @@ test("Slack approval endpoint delegates exact actor and revision authority", asy
     const address = server.address();
     assert(address && typeof address === "object");
     const url = `http://127.0.0.1:${address.port}/v1/slack/approve`;
+    const cardToken = createHmac("sha256", "test-token")
+      .update("hold-42\0" + "2\0checkout\0v42")
+      .digest("hex");
     const send = (actorId: string, revision = 2) => fetch(url, {
       method: "POST",
       headers: {
@@ -183,6 +257,9 @@ test("Slack approval endpoint delegates exact actor and revision authority", asy
       body: JSON.stringify({
         workflowId: "hold-42",
         workspaceId: "T1",
+        resourceId: "checkout",
+        candidateRevision: "v42",
+        cardToken,
         actorId,
         revision,
       }),
@@ -196,10 +273,45 @@ test("Slack approval endpoint delegates exact actor and revision authority", asy
       body: JSON.stringify({
         workflowId: "hold-42",
         workspaceId: "T2",
+        resourceId: "checkout",
+        candidateRevision: "v42",
+        cardToken,
         actorId: "U-OWNER",
         revision: 2,
       }),
     })).status, 400);
+    assert.equal((await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer test-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        workflowId: "hold-42",
+        workspaceId: "T1",
+        resourceId: "checkout",
+        candidateRevision: "v42",
+        cardToken: "not-the-rendered-card",
+        actorId: "U-OWNER",
+        revision: 2,
+      }),
+    })).status, 403);
+    assert.equal((await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer test-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        workflowId: "hold-42",
+        workspaceId: "T1",
+        resourceId: "checkout",
+        candidateRevision: "v99",
+        cardToken,
+        actorId: "U-OWNER",
+        revision: 2,
+      }),
+    })).status, 403);
     assert.equal((await send("U-JUNIOR")).status, 403);
     assert.equal((await send("U-OWNER", 1)).status, 403);
     assert.equal((await send("U-OWNER")).status, 200);

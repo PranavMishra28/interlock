@@ -126,3 +126,30 @@ test("restart converts an in-flight dispatch to uncertain intervention", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("duplicate timestamp persists the clock reset instead of leaving READY", () => {
+  const dir = mkdtempSync(join(tmpdir(), "interlock-clock-reset-"));
+  const store = new InterlockStore(join(dir, "state.db"));
+  try {
+    let workflow = approve(createWorkflow(contract, trusted), "U-OWNER", 1, 100);
+    workflow = observe(workflow, 0.3, 1_000, 1_010);
+    store.saveObservation(workflow, 0.3, 1_000);
+    workflow = observe(workflow, 0.3, 1_500, 1_510);
+    store.saveObservation(workflow, 0.3, 1_500);
+    workflow = observe(workflow, 0.3, 2_000, 2_010);
+    store.saveObservation(workflow, 0.3, 2_000);
+    assert.equal(workflow.status, "READY");
+
+    workflow = observe(workflow, 0.2, 2_000, 2_020);
+    store.saveObservation(workflow, 0.2, 2_000);
+    assert.equal(store.get(contract.id)?.status, "ACTIVE_HOLD");
+    assert.equal(
+      store.get(contract.id)?.observation?.resets.at(-1)?.reason,
+      "clock",
+    );
+    assert.equal(store.samples(contract.id).at(-1)?.value, 0.2);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

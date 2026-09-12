@@ -60,6 +60,13 @@ export type Workflow = {
   approval?: { actorId: string; revision: number; approvedAt: number };
   observation?: Observation;
   operation?: { id: string; claimedAt: number; uncertain: boolean };
+  verification?: {
+    observedRevision: string;
+    trafficPercent: number;
+    healthValue: number;
+    observedAt: number;
+    verifiedAt: number;
+  };
   receipt?: {
     operationId: string;
     expectedRevision: string;
@@ -218,11 +225,6 @@ export function markDispatchUncertain(workflow: Workflow): Workflow {
   };
 }
 
-export function reconcileNotApplied(workflow: Workflow): Workflow {
-  assert(workflow.status === "NEEDS_INTERVENTION" && workflow.operation?.uncertain, "NOT_UNCERTAIN", "Only an uncertain dispatch can be reconciled.");
-  return { ...workflow, status: "READY", operation: undefined };
-}
-
 export function verify(
   workflow: Workflow,
   observed: {
@@ -235,8 +237,7 @@ export function verify(
 ): Workflow {
   assert(
     (workflow.status === "DISPATCHING" ||
-      (workflow.status === "NEEDS_INTERVENTION" &&
-        workflow.operation?.uncertain)) &&
+      workflow.status === "NEEDS_INTERVENTION") &&
       workflow.operation,
     "NO_OPERATION",
     "No claimed operation can be verified.",
@@ -244,9 +245,23 @@ export function verify(
   const matches =
     observed.revision === workflow.contract.candidateRevision &&
     observed.trafficPercent === 100 &&
+    Number.isFinite(observed.healthValue) &&
     observed.healthValue <= workflow.contract.threshold &&
+    observed.observedAt <= now &&
     now - observed.observedAt <= workflow.contract.maxSampleAgeMs;
-  if (!matches) return { ...workflow, status: "NEEDS_INTERVENTION" };
+  if (!matches) {
+    return {
+      ...workflow,
+      status: "NEEDS_INTERVENTION",
+      verification: {
+        observedRevision: observed.revision,
+        trafficPercent: observed.trafficPercent,
+        healthValue: observed.healthValue,
+        observedAt: observed.observedAt,
+        verifiedAt: now,
+      },
+    };
+  }
   return {
     ...workflow,
     status: "RETIRED",

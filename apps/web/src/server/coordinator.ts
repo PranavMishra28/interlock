@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +18,20 @@ function sameSecret(actual: string, expected: string) {
   const left = Buffer.from(actual);
   const right = Buffer.from(expected);
   return left.length === right.length && timingSafeEqual(left, right);
+}
+
+function approvalCapability(token: string, workflow: {
+  contract: {
+    id: string;
+    revision: number;
+    resourceId: string;
+    candidateRevision: string;
+  };
+}) {
+  const { id, revision, resourceId, candidateRevision } = workflow.contract;
+  return createHmac("sha256", token)
+    .update(`${id}\0${revision}\0${resourceId}\0${candidateRevision}`)
+    .digest("hex");
 }
 
 function isSourceMessage(value: unknown): value is SourceMessage {
@@ -154,6 +168,80 @@ export function createCoordinator(
 
     if (
       request.method === "POST" &&
+      request.url === "/v1/slack/proposals" &&
+      options.ingressToken &&
+      options.allowedWorkspaceId &&
+      options.allowedChannelId &&
+      options.workflowCoordinator
+    ) {
+      const token = request.headers.authorization?.replace(/^Bearer /, "") ?? "";
+      if (!sameSecret(token, options.ingressToken)) {
+        response.writeHead(401).end();
+        return;
+      }
+      try {
+        const input = await readJson(request) as Record<string, unknown>;
+        if (
+          input.workspaceId !== options.allowedWorkspaceId ||
+          input.channelId !== options.allowedChannelId ||
+          input.resourceId !== options.workflowCoordinator.trusted.resourceId ||
+          input.candidateRevision !== options.workflowCoordinator.trusted.candidateRevision ||
+          typeof input.threadRef !== "string" ||
+          typeof input.threshold !== "number" ||
+          !Number.isFinite(input.threshold) ||
+          input.threshold < 0 ||
+          typeof input.windowMs !== "number" ||
+          !Number.isInteger(input.windowMs) ||
+          input.windowMs < 1 ||
+          input.windowMs > 3_600_000
+        ) {
+          response.writeHead(400).end();
+          return;
+        }
+        const source = store.sourceContext(input.threadRef).at(-1);
+        if (
+          !source ||
+          source.workspaceId !== options.allowedWorkspaceId ||
+          source.channelId !== options.allowedChannelId
+        ) {
+          response.writeHead(409).end();
+          return;
+        }
+        const digest = createHash("sha256").update(source.revisionId).digest();
+        const workflowId = `hold-${digest.toString("hex").slice(0, 12)}`;
+        const existing = store.get(workflowId);
+        const workflow = existing ?? options.workflowCoordinator.propose({
+          id: workflowId,
+          revision: digest.readUInt32BE(0) || 1,
+          sourceDeliveryId: source.deliveryId,
+          sourceMessageRef: `${source.channelId}:${source.logicalMessageId}`,
+          ...options.workflowCoordinator.trusted,
+          threshold: input.threshold,
+          windowMs: input.windowMs,
+          maxSampleAgeMs: 15_000,
+          maxSampleGapMs: 20_000,
+          proposalExpiresAt: now() + 300_000,
+        }, now());
+        response.writeHead(existing ? 200 : 201, {
+          "content-type": "application/json",
+        });
+        response.end(JSON.stringify({
+          workflowId: workflow.contract.id,
+          revision: workflow.contract.revision,
+          resourceId: workflow.contract.resourceId,
+          candidateRevision: workflow.contract.candidateRevision,
+          cardToken: approvalCapability(options.ingressToken, workflow),
+          condition:
+            `Health must remain at or below ${workflow.contract.threshold} for ${workflow.contract.windowMs / 1_000} seconds.`,
+        }));
+      } catch {
+        response.writeHead(409).end();
+      }
+      return;
+    }
+
+    if (
+      request.method === "POST" &&
       request.url === "/v1/slack/approve" &&
       options.ingressToken &&
       options.allowedWorkspaceId &&
@@ -169,10 +257,26 @@ export function createCoordinator(
         if (
           typeof input.workflowId !== "string" ||
           typeof input.actorId !== "string" ||
+          typeof input.resourceId !== "string" ||
+          typeof input.candidateRevision !== "string" ||
+          typeof input.cardToken !== "string" ||
           input.workspaceId !== options.allowedWorkspaceId ||
           typeof input.revision !== "number"
         ) {
           response.writeHead(400).end();
+          return;
+        }
+        const pending = store.get(input.workflowId);
+        if (
+          !pending ||
+          pending.contract.resourceId !== input.resourceId ||
+          pending.contract.candidateRevision !== input.candidateRevision ||
+          !sameSecret(
+            input.cardToken,
+            approvalCapability(options.ingressToken, pending),
+          )
+        ) {
+          response.writeHead(403).end();
           return;
         }
         const workflow = options.workflowCoordinator.approve(

@@ -6,7 +6,6 @@ import {
   markDispatchUncertain,
   observe,
   promotionAllowed,
-  reconcileNotApplied,
   verify,
   type Contract,
   type TrustedResource,
@@ -47,7 +46,11 @@ export class InterlockCoordinator {
       (workflow) =>
         workflow.contract.id !== contract.id &&
         workflow.contract.resourceId === contract.resourceId &&
-        workflow.status !== "RETIRED",
+        workflow.status !== "RETIRED" &&
+        !(
+          workflow.status === "PROPOSED" &&
+          now > workflow.contract.proposalExpiresAt
+        ),
     );
     if (conflict) {
       throw new Error(
@@ -81,8 +84,15 @@ export class InterlockCoordinator {
   }
 
   async continue(id: string, adapter: TargetAdapter, now = Date.now()) {
+    const current = this.required(id);
+    if (
+      current.status === "NEEDS_INTERVENTION" &&
+      current.operation
+    ) {
+      return this.reconcile(id, adapter);
+    }
     let workflow = claim(
-      this.required(id),
+      current,
       this.trusted,
       randomUUID(),
       now,
@@ -96,19 +106,39 @@ export class InterlockCoordinator {
     } catch {
       workflow = markDispatchUncertain(workflow);
       this.store.save(workflow, now);
-      const observed = await adapter.read();
-      workflow =
-        observed.revision === workflow.contract.candidateRevision &&
-        observed.trafficPercent === 100
-          ? verify(workflow, observed, Date.now())
-          : reconcileNotApplied(workflow);
+      return this.reconcile(id, adapter);
+    }
+
+    let observed: TargetObservation;
+    try {
+      observed = await adapter.read();
+    } catch {
+      workflow = markDispatchUncertain(workflow);
       this.store.save(workflow);
       return workflow;
     }
-
-    workflow = verify(workflow, await adapter.read(), Date.now());
+    workflow = verify(workflow, observed, Date.now());
     this.store.save(workflow);
     return workflow;
+  }
+
+  async reconcile(id: string, adapter: TargetAdapter) {
+    const workflow = this.required(id);
+    if (
+      workflow.status !== "NEEDS_INTERVENTION" ||
+      !workflow.operation
+    ) {
+      throw new Error("Only an unresolved dispatch can be reconciled.");
+    }
+    let observed: TargetObservation;
+    try {
+      observed = await adapter.read();
+    } catch {
+      return workflow;
+    }
+    const reconciled = verify(workflow, observed, Date.now());
+    this.store.save(reconciled);
+    return reconciled;
   }
 
   private required(id: string): Workflow {

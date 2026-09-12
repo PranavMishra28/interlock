@@ -8,7 +8,6 @@ import {
   markDispatchUncertain,
   observe,
   promotionAllowed,
-  reconcileNotApplied,
   resetObservation,
   verify,
   type Contract,
@@ -93,6 +92,17 @@ test("claim is single-use, revalidates trust, and verifies the exact target", ()
     2_030,
   );
   assert.equal(failed.status, "NEEDS_INTERVENTION");
+  assert.equal(failed.verification?.observedRevision, "v41");
+  assert.equal(verify(
+    failed,
+    { revision: "v42", trafficPercent: 100, healthValue: 0.2, observedAt: 2_035 },
+    2_040,
+  ).status, "RETIRED");
+  assert.equal(verify(
+    dispatching,
+    { revision: "v42", trafficPercent: 100, healthValue: 0.2, observedAt: 2_050 },
+    2_040,
+  ).status, "NEEDS_INTERVENTION");
 
   const retired = verify(
     dispatching,
@@ -104,7 +114,7 @@ test("claim is single-use, revalidates trust, and verifies the exact target", ()
   assert.equal(promotionAllowed(retired), true);
 });
 
-test("uncertain dispatch requires read-back reconciliation before retry", () => {
+test("uncertain dispatch retains its claim until exact read-back succeeds", () => {
   let state = approve(createWorkflow(contract, trusted), "U-OWNER", 3, 100);
   state = observe(state, 0.3, 1_000, 1_010);
   state = observe(state, 0.3, 1_500, 1_510);
@@ -112,9 +122,13 @@ test("uncertain dispatch requires read-back reconciliation before retry", () => 
   state = claim(state, trusted, "op-1", 2_020);
   state = markDispatchUncertain(state);
   assert.equal(state.status, "NEEDS_INTERVENTION");
-  state = reconcileNotApplied(state);
-  assert.equal(state.status, "READY");
-  assert.equal(state.operation, undefined);
+  state = verify(
+    state,
+    { revision: "v41", trafficPercent: 100, healthValue: 0.2, observedAt: 2_025 },
+    2_030,
+  );
+  assert.equal(state.status, "NEEDS_INTERVENTION");
+  assert.equal(state.operation?.id, "op-1");
 });
 
 test("untrusted target and missing source abstain before persistence", () => {

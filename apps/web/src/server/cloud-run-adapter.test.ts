@@ -90,3 +90,23 @@ test("Cloud Run adapter rejects unsafe health URLs and oversized responses", asy
   const adapter = new CloudRunAdapter(config, async () => "token", request);
   await assert.rejects(adapter.promote("checkout-v42", "op"), /size limit/);
 });
+
+test("Cloud Run read-back reports the revision with effective traffic", async () => {
+  const responses = [
+    Response.json({
+      trafficStatuses: [
+        { revision: "checkout-v42", percent: 0 },
+        { revision: "checkout-v41", percent: 100 },
+      ],
+    }),
+    Response.json({ value: 0.4, observedAt: 1234 }),
+  ];
+  const request = (async () => responses.shift()!) as typeof fetch;
+  const adapter = new CloudRunAdapter(config, async () => "token", request);
+  assert.deepEqual(await adapter.read(), {
+    revision: "checkout-v41",
+    trafficPercent: 100,
+    healthValue: 0.4,
+    observedAt: 1234,
+  });
+});

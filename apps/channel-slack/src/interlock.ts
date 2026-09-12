@@ -76,7 +76,7 @@ export async function deliverAmbientMessage(
   if (!response.ok) {
     throw new Error(`Coordinator rejected Slack delivery (${response.status}).`);
   }
-  return true;
+  return response.status === 201;
 }
 
 export async function reportListenerHeartbeat(config: {

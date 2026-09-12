@@ -1,11 +1,4 @@
-import {
-  closeSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import {
@@ -18,12 +11,12 @@ import {
 export class InterlockStore {
   readonly database: DatabaseSync;
   readonly lockPath: string;
-  private lockFd: number;
+  private lockDatabase: DatabaseSync;
 
   constructor(readonly path: string) {
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     this.lockPath = `${path}.lock`;
-    this.lockFd = this.acquireLock();
+    this.lockDatabase = this.acquireLock();
     this.database = new DatabaseSync(path);
     this.database.exec(`
       PRAGMA journal_mode = WAL;
@@ -68,27 +61,14 @@ export class InterlockStore {
   }
 
   private acquireLock() {
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try {
-        const fd = openSync(this.lockPath, "wx", 0o600);
-        writeFileSync(fd, String(process.pid));
-        return fd;
-      } catch (error) {
-        if (attempt || !(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") throw error;
-        const pid = Number(readFileSync(this.lockPath, "utf8"));
-        try {
-          process.kill(pid, 0);
-          throw new Error(`Interlock database is already owned by process ${pid}.`);
-        } catch (probe) {
-          if (probe instanceof Error && "code" in probe && probe.code === "ESRCH") {
-            rmSync(this.lockPath);
-            continue;
-          }
-          throw probe;
-        }
-      }
+    const lock = new DatabaseSync(this.lockPath);
+    try {
+      lock.exec("PRAGMA busy_timeout = 0; BEGIN EXCLUSIVE;");
+      return lock;
+    } catch {
+      lock.close();
+      throw new Error("Interlock database is already owned by another process.");
     }
-    throw new Error("Unable to acquire Interlock database ownership.");
   }
 
   private recover(now: number) {
@@ -143,7 +123,10 @@ export class InterlockStore {
     this.database.exec("BEGIN IMMEDIATE");
     try {
       this.database
-        .prepare("INSERT INTO samples (workflow_id, observed_at, value) VALUES (?, ?, ?)")
+        .prepare(`
+          INSERT INTO samples (workflow_id, observed_at, value) VALUES (?, ?, ?)
+          ON CONFLICT(workflow_id, observed_at) DO UPDATE SET value = excluded.value
+        `)
         .run(workflow.contract.id, observedAt, value);
       this.save(workflow, now);
       this.database.exec("COMMIT");
@@ -230,7 +213,7 @@ export class InterlockStore {
 
   close() {
     this.database.close();
-    closeSync(this.lockFd);
-    rmSync(this.lockPath, { force: true });
+    this.lockDatabase.exec("ROLLBACK");
+    this.lockDatabase.close();
   }
 }
