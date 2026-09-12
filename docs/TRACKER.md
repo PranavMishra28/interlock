@@ -156,6 +156,14 @@ before compaction.
     with a pruned nullable union removed it.
 - Cumulative OpenAI spend this event is approximately $0.03 against the $100
   cap: a free model-list read plus six eval runs.
+- Current-tree verification 2026-09-12: the UI-1 targeted gate
+  (`npm run typecheck --workspace web`, 40 web tests, and the production web
+  build) passed at clean committed checkpoint
+  `01b437b:b4f02998c07eac48cafc762acb8c21c607c9cb63`. The subsequent
+  `bash scripts/check.sh` passed on the same tree, including all workspace
+  typechecks and tests, MCP stdio, production web build, scope/phase negatives,
+  hook fixtures, canonical documentation links, workflow policy, and action
+  pins. No paid API call or external mutation was made by this verification.
 - Live GCP evidence: dedicated personal project `interlock-508417` provisioned
   in `us-central1` inside the $0 Always Free envelope, isolated in the named
   gcloud configuration `interlock`. `checkout-v41` serves 100%; candidate
@@ -163,16 +171,18 @@ before compaction.
   `{value, observedAt}` contract the adapter requires; an unauthenticated
   `POST /fault` is refused with 403 while a tokened call genuinely degrades
   health to 0.9 and recovers to 0.1. The teardown ledger is in READINESS.
-- Blockers: Slack channel install missing, and the pasted tokens must be
-  revoked/rotated before any live Slack attempt. OpenAI live eval is authorized
-  but waits for the dependency gate and bounded model path to be wired.
-  Coordinator process does not yet observe/enforce/continue. Approval cards
-  do not survive listener restart. Inherited dependency exposure still blocks
-  public hosting.
-- Superseded next action: wire the coordinator observe/refuse/continue loop and
-  the restart-safe registered approval component offline, then re-run the
-  targeted tests and the full check; wait for a personal `us-central1` project
-  the Gmail identity can describe before any live GCP step.
+- Blockers: CAP-SLACK remains ACCESS_REQUIRED. The previously pasted bot and
+  app-level tokens are compromised and may not be recovered or reused; the
+  managed Channel needs a freshly issued bot token plus the Slack signing
+  secret and configured workspace/channel/owner IDs. Inherited dependency
+  exposure still blocks public hosting, but the reviewed loopback-only
+  READINESS amendment permits the bounded local Slack/OpenAI/Cloud Run demo.
+- Exact next action: after the maintainer places the fresh Slack bot token,
+  signing secret, workspace ID, channel ID, and owner ID directly in ignored
+  `.env`, attach the existing `interlock` managed Channel, run the bounded live
+  top-level/reply/approval/restart checks, and complete RELEASE-1. Until that
+  external install exists, continue eligible UI/rehearsal/repository gates
+  without representing synthetic evidence as live.
 
 ## Invariant summary
 
@@ -191,7 +201,7 @@ normative wording.
 | CAP-LOCAL | Node/npm/Git, inherited workspaces, loopback development | OFFLINE_READY | READINESS versions; `bash scripts/check.sh` |
 | CAP-HARNESS | Project hooks and resume path | OFFLINE_READY | hook fixtures pass; current IDE shell hook observed; fresh-session context check pending |
 | CAP-SLACK | Personal Slack workspace/app and ambient channel delivery | ACCESS_REQUIRED | owner installs after P0; new unmentioned top-level + reply test |
-| CAP-MODEL | Personal OpenAI project/key and agreed API budget | OFFLINE_READY | key configured; `gpt-5.4-mini-2026-03-17` available; $100 hard cap recorded; bounded live eval pending dependency gate |
+| CAP-MODEL | Personal OpenAI project/key and agreed API budget | LIVE_VERIFIED | `gpt-5.4-mini-2026-03-17`; 9/9 bounded live eval on three consecutive runs; approximately $0.03 cumulative event spend against $100 cap |
 | CAP-GCP | Dedicated personal GCP project, budget, target and execution identity | LIVE_VERIFIED | `interlock-508417`/`us-central1`; `checkout-v41` serving 100%, `checkout-v42` at 0%; health 0.1/0.9/0.1 observed; unauthenticated fault refused 403 |
 
 Statuses: `OFFLINE_READY`, `KEY_REQUIRED`, `ACCESS_REQUIRED`,
