@@ -78,15 +78,14 @@ the integrated recording rather than authorizing synthetic substitution.
 - Public repository: https://github.com/PranavMishra28/interlock
 - Description: Ambient operational constraints for Slack, with explicit
   approval and verified outcomes.
-- Event-built files/commits through the current implementation checkpoint:
-  `dc42655^..ad6f8c7`; the immutable boundary is recorded in
-  `HACKATHON_PROVENANCE.md`
+- Event-built files/commits are merged through PR #7; the immutable boundary
+  and per-commit ledger are recorded in `HACKATHON_PROVENANCE.md`
 - Surface/target: one authorized Slack incident channel / one event-created
-  Cloud Run revision; Cloud Run is live-verified, while Slack is not
-- Known limitations: Slack remains `ACCESS_REQUIRED`, so RELEASE-1 and DEMO-1
-  remain blocked; the local rehearsal is synthetic and proves no external
-  integration; dependency alerts still block public exposure; the coordinator
-  is single-machine and Node SQLite is experimental.
+  Cloud Run revision; Cloud Run and the Slack transport are live-verified
+- Known limitations: the human Slack message-to-receipt rehearsal is incomplete,
+  so RELEASE-1 and DEMO-1 remain blocked; the local rehearsal is synthetic and
+  proves no external integration; dependency alerts still block public
+  exposure; the coordinator is single-machine and Node SQLite is experimental.
 - Demo video URL: _none_
 - Social post text/URL: _none_
 

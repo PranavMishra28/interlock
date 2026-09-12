@@ -10,9 +10,9 @@ before compaction.
 
 ## Checkpoint
 
-- Inspected base: clean `main` at
-  `88b6309b071978fb2ec585b683392a11d5283358` (PR #6 merge).
-- Working branch: `build-active`.
+- Inspected base: `main` at PR #7 merge
+  `cc4e89ec43ee29754810c8afda9464448f2dc8e5`.
+- Working branch: `main`, direct-push cleanup authorized by the maintainer.
 - Last checkpoint: 2026-09-12 economical model and managed-channel
   configuration. The configured personal OpenAI project exposes the pinned
   `gpt-5.4-mini-2026-03-17` snapshot; runtime fallback, preflight, and
@@ -130,7 +130,7 @@ before compaction.
   than a contract field, so no proposer can widen the tolerance that decides
   whether a target's clock is trusted.
 - CLOUD-1 live evidence 2026-09-12 against `checkout` in `interlock-508417`
-  (`us-central1`), driven by `apps/web/src/server/live-check.ts`:
+  (`us-central1`), driven by the bounded live harness removed after merge:
   - Refusal: starting from `checkout-v41` at 100% with the health endpoint
     faulted to 0.9 against a 0.5 threshold, the hold recorded 25 resets across
     ~35s and traffic never moved.
@@ -314,6 +314,58 @@ before compaction.
   makes the empty-notes boundary, exact commands, surface ownership, and
   expected authority-to-closure beats explicit; its walkthrough test,
   documentation links, and full `bash scripts/check.sh` passed.
+- Pushed-checkpoint re-verification 2026-09-12 at clean
+  `1dda15ef6ded75e5d2a335c661507aeeb2bc6249:8510f81fbd46b82cff8b66809f6072905fae81bd`,
+  the first identity that is both committed and present on
+  `origin/build-active`. Recorded evidence had gone stale at `76bf42f3`
+  because the operator-guide checkpoint was a TRACKER-only commit. Targeted
+  documentation links and the walkthrough preflight test passed, then full
+  `bash scripts/check.sh` passed and recorded current-tree evidence. This pass
+  read only: no Cloud Run mutation, no Slack message or approval, no promotion,
+  and no change to the live columns below.
+- Cumulative PR and merge 2026-09-12: pushing `build-active` alone enqueued no
+  required check, because `.github/workflows/ci.yml` triggers only on `main`
+  pushes and pull requests. PR
+  [#7](https://github.com/PranavMishra28/interlock/pull/7) `Build Interlock —
+  ambient operational decision execution layer` was therefore opened from
+  `build-active` into `main`; the required `verify` check passed in 1m45s and
+  the PR was merged at 22:25:04Z as `cc4e89ec43ee29754810c8afda9464448f2dc8e5`.
+  Recorded honestly: this merge happened **before** the live Slack-to-receipt
+  rehearsal, so it did not wait for the RELEASE-1 and DEMO-1 acceptance stated
+  in the next-action bullet below. Merging did not create live evidence. The
+  live columns below are unchanged, and the unrehearsed live flow remains the
+  outstanding work rather than something the merge settled.
+- Post-merge cleanup removed unused starter guides, inherited chat/voice/search
+  surfaces, static Control Room fixtures, and the direct live-check harness.
+  The local synthetic walkthrough still uses the real coordinator, SQLite
+  store, and supervisor path and remains explicitly synthetic. Full
+  `bash scripts/check.sh` passed on the clean cleanup commit
+  `db1eb5c3ed729981e8ddf803d4e2d19f89a0828d:e6d5b0d9d1c1c32677d5b045cdc9f7eb8c5a0789`;
+  the walkthrough also reached one synthetic retained `v42` receipt.
+- Demo presentation follow-up: the supplied near-touching-hands reference is
+  not a repository asset. The sole tracked brand image remains
+  `apps/web/src/app/icon.svg`, shared by Next.js metadata and the product bar;
+  its small-size silhouette was simplified around a larger fingertip gap.
+  `npm run demo` now starts the labeled synthetic coordinator and Control Room
+  together; the separate commands remain documented for recording each surface.
+- Single-command local verification 2026-09-12 at clean committed
+  `34ea7ab75ab38d8c72e100496b8733750f85c9ef:44ec4591528507af443d2a9ea4c899f1d7ad7969`.
+  Recorded evidence had gone stale when the icon commit moved HEAD past the
+  previous run. `npm run demo` was exercised end to end: it reset the store,
+  bound `127.0.0.1:4318`, waited for that port, then served the Control Room on
+  `3100`. Observed in one run: wrong actor refused, wrong revision refused,
+  exact owner approved revision 1, `ACTIVE_HOLD` with health 0.9, enforcement
+  refused promotion with `allowed=false; reason=ACTIVE_HOLD`, synthetic
+  recovery to 0.1, four unhealthy window resets, then `RETIRED` with one
+  receipt whose `expectedRevision` and `observedRevision` were both `v42` at
+  health 0.1. The coordinator snapshot reported `source: "synthetic"` and the
+  Control Room rendered `TEST INPUT — SYNTHETIC` with the Slack listener
+  honestly `Not connected`. A leftover run holding 4318 or 3100 previously
+  surfaced as a mid-story `EADDRINUSE` stack trace and once failed
+  `scripts/check.sh`; the command now names the port and pid and exits first.
+  Targeted gates: 61 root, 44 web, and the walkthrough preflight plus its test.
+  Full `bash scripts/check.sh` then passed on this clean tree. This pass made no
+  Cloud Run mutation, posted no Slack message, and changed no live column.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
@@ -322,8 +374,8 @@ before compaction.
 - Exact next action: invite the existing bot if needed, then run the bounded
   live top-level/reply/configured-owner approval flow and complete RELEASE-1.
   Do not create a second Channel and do not represent the synthetic walkthrough
-  as live integration evidence. Do not open the cumulative PR until RELEASE-1
-  and DEMO-1 satisfy their immutable acceptance.
+  as live integration evidence. Video, social publication, and portal
+  submission remain human-only and unauthorized.
 
 ## Invariant summary
 

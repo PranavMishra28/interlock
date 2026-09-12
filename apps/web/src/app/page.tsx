@@ -1,14 +1,12 @@
 import {
   emptyState,
   executionGate,
-  fixtureStates,
   healthChartDomain,
   healthChartX,
   healthChartY,
   lifecycleNext,
   lifecycleReached,
   loadSnapshot,
-  type FixtureState,
 } from "@/lib/control-room";
 
 const lifecycle = [
@@ -23,16 +21,8 @@ const lifecycle = [
   "Retirement",
 ] as const;
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ fixture?: string }>;
-}) {
-  const requested = (await searchParams).fixture;
-  const fixture: FixtureState = fixtureStates.includes(requested as FixtureState)
-    ? requested as FixtureState
-    : "observing";
-  const snapshot = await loadSnapshot(fixture);
+export default async function Home() {
+  const snapshot = await loadSnapshot();
   const workflow = snapshot.workflow;
   const resets = workflow?.observation?.resets ?? [];
   const chartTimes = [

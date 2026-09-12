@@ -220,10 +220,10 @@ Two inherited security boundaries also block deployment as-is:
 - `scripts/check-env.sh` parses `.env` as inert `KEY=VALUE` data. `npm run
   doctor` reports configured/missing for OpenAI, CopilotKit, Slack, and GCP
   identity and never prints values.
-- the inherited CopilotKit, realtime-token, and search routes have no Interlock
-  operator session. BUILD_ACTIVE disables those routes, redirects the inherited
-  voice page, and pins web/coordinator listeners to loopback. Do not re-enable
-  them or deploy without a separate authenticated design and dependency review.
+- the inherited CopilotKit, realtime-token, search, and voice paths had no
+  Interlock operator session and were removed after the product merge.
+  Web/coordinator listeners remain loopback-only. Do not restore or deploy them
+  without a separate authenticated design and dependency review.
 
 ## Verified preparation evidence
 
@@ -239,8 +239,7 @@ Two inherited security boundaries also block deployment as-is:
   push [run 34683950172](https://github.com/PranavMishra28/interlock/actions/runs/34683950172)
   passed.
 - Previous fresh clone: `npm ci` and `bash scripts/check.sh` passed; inherited
-  web rendered locally with no live model call. Evidence image:
-  `docs/evidence/inherited-starter-web-2026-09-11.png`.
+  web rendered locally with no live model call.
 - GitHub read-back at baseline: public personal repo; secret scanning and push
   protection enabled; Dependabot alerts/updates enabled; private vulnerability
   reporting enabled; protected `main` requires strict `verify`, blocks force

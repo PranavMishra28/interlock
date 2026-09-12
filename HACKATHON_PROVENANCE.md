@@ -40,7 +40,7 @@ diff <(git -C /tmp/up ls-tree -r 2622f07d17850ad68bb9a7266c566c1fefc97df4 | awk 
 mismatch.) `bash scripts/scope-audit.sh` checks the working tree against the
 same baseline on every CI run.
 
-### Imported paths (75 files)
+### Imported paths at the baseline (75 files)
 
 - `package.json`, `package-lock.json`, `.nvmrc`, `.env.example`, `LICENSE`, `.gitignore` (later extended, see below)
 - `packages/agent-core/**` — shared agent factory (`BuiltInAgent`), model resolver, prompt, MCP capability wiring
@@ -48,6 +48,10 @@ same baseline on every CI run.
 - `apps/channel-slack/**`, `apps/local-chat/**`, `apps/mcp/**` — other root workspaces; imported because they share the single lockfile (removing them would desync `npm ci`). `apps/channel-slack/**` is the intended Slack transport reference for the planned build; `apps/local-chat/**` and `apps/mcp/**` are not used by the plan.
 - `scripts/check-env.sh`, `scripts/dev.sh`, `scripts/verify.sh`, `scripts/verify-mcp.mjs`, `scripts/*.test.*`
 - `hackathon-overview.md`, `hackathon-rules.md`, `using-sponsor-tools.md`, `CREDITS.md`, `templates/web.md`, `templates/slack.md`, `dev-docs/*.md`
+
+After PR #7 merged, the unused starter guides above and the unused inherited
+web chat/voice/search UI paths were removed. The npm workspaces, lockfile,
+license, and this historical import record remain intact.
 
 ### Deliberately not imported
 

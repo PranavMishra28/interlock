@@ -61,7 +61,7 @@ if (status.overall !== "online") {
   console.error(
     `\n  Channel is not online: ${JSON.stringify(status)}\n` +
       `  → 'setup_required' means the provider side is unfinished. Run: npm run channel:status\n` +
-      `  → See dev-docs/troubleshooting.md\n`,
+      `  → See docs/RUNBOOK.md\n`,
   );
   await teardown();
   process.exit(1);

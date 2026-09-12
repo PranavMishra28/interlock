@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next start --hostname 127.0.0.1 -p 3100",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/lib/*.test.ts src/components/streamed-cards.test.ts src/server/*.test.ts"
+    "test": "node --import tsx --test src/lib/*.test.ts src/server/*.test.ts"
   },
   "dependencies": {
     "@copilotkit/react-core": "1.70.1",

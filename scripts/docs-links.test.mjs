@@ -6,7 +6,6 @@ const files = [
   "AGENTS.md",
   "README.md",
   "SECURITY.md",
-  "SUBMISSION.md",
   "HACKATHON_PROVENANCE.md",
   ...readdirSync(join(root, "docs"))
     .filter((name) => name.endsWith(".md"))
