@@ -13,7 +13,7 @@ before compaction.
 - Inspected base: clean `main` at
   `88b6309b071978fb2ec585b683392a11d5283358` (PR #6 merge).
 - Working branch: `build-active`.
-- Last checkpoint: 2026-09-12 BUILD_ACTIVE early slice.
+- Last checkpoint: 2026-09-12 10:51 PDT, offline release checkpoint.
 - Authorization evidence: the maintainer confirmed the official build opening
   and authorized BUILD_ACTIVE in this session. Scope is the PLAN MVP and
   personal accounts only. No external spend or provisioning limit is recorded,
@@ -44,6 +44,12 @@ before compaction.
   800px layout without horizontal overflow, reduced motion, one H1, chart text
   alternative, and the synthetic label. Inherited paid/search routes are
   disabled and the voice page redirects to the Control Room.
+- Current completion evidence: release-targeted agent-core (8), Slack (13), and
+  web/coordinator/adapter (25) tests plus the production web build passed at
+  clean checkpoint `bdf7ca0`. The subsequent full `bash scripts/check.sh`
+  passed and recorded `bdf7ca0:8a6ab7a`, including all workspace typechecks,
+  tests, MCP stdio, web build, phase negatives, hooks, docs, and workflow
+  policy. No external account, paid call, or deployment was used.
 - Blockers: personal Slack, OpenAI, and GCP capabilities and spending limits
   are not live-verified; inherited dependency exposure blocks public/live use.
 - Exact next action: run milestone correctness/security reviews and a truthful
