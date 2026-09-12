@@ -180,9 +180,9 @@ before compaction.
     synthetic source, and textual state/threshold/window/reset alternatives to
     semantic color and the plot.
 - Local synthetic demo evidence
-  `99468f5ce3fd9086ff47dec12b93010143d07efd:c8abe9f84e6a094d47cd69848123104c718ea7cc`:
-  web typecheck, all 43 web tests, the production web build, and the subsequent
-  full `bash scripts/check.sh` passed on the exact stable working tree. The
+  `18da43d96dc030725628dd01483c5e6adcef3e81:92508112ceb1486043c346633c25adc376b1a40e`:
+  web typecheck, all 43 web tests, the production web build, and the full
+  `bash scripts/check.sh` passed on a clean tree at that commit. The
   loopback demo uses the real store, coordinator, and supervisor with one
   in-process synthetic target; it persists one approved revision-bound
   contract, starts unhealthy so promotion remains refused, then supplies a
