@@ -174,6 +174,116 @@ test("an unhealthy sample restarts the window instead of promoting", async () =>
   }
 });
 
+test("a read slower than the interval does not reset the window", async () => {
+  const fixture = setup();
+  const driver = target(fixture.base);
+  // Long enough that the hold cannot close during the test: this asserts the
+  // window survives, not that it completes.
+  const contract = { ...fixture.contract, windowMs: 60_000 };
+  let localNow = fixture.base;
+  try {
+    fixture.coordinator.propose(contract, fixture.base);
+    fixture.coordinator.approve(
+      contract.id,
+      "U-OWNER",
+      contract.revision,
+      fixture.base + 10,
+    );
+
+    let openGate: (() => void) | undefined;
+    let gate: Promise<void> | undefined;
+    const adapter = {
+      promote: (revision: string) => driver.adapter.promote(revision),
+      async read() {
+        if (gate) await gate;
+        return driver.adapter.read();
+      },
+    };
+    const supervisor = createSupervisor({
+      coordinator: fixture.coordinator,
+      adapter,
+      intervalMs: 500,
+      now: () => localNow,
+    });
+
+    driver.advance(100);
+    localNow += 100;
+    await supervisor.tick();
+    const started = fixture.store.get(contract.id)?.observation?.localWindowStartedAt;
+    assert.equal(started, localNow);
+
+    // A read begins that will outlast several polling intervals.
+    gate = new Promise<void>((resolve) => {
+      openGate = resolve;
+    });
+    driver.advance(100);
+    localNow += 100;
+    const inFlight = supervisor.tick();
+
+    // The scheduler keeps firing on time. These fires find the read in progress
+    // and return early, but their arrival is what proves the machine is awake.
+    for (let index = 0; index < 4; index += 1) {
+      localNow += 500;
+      await supervisor.tick();
+    }
+    openGate?.();
+    await inFlight;
+
+    driver.advance(500);
+    localNow += 500;
+    await supervisor.tick();
+
+    const held = fixture.store.get(contract.id);
+    assert.equal(held?.observation?.localWindowStartedAt, started);
+    assert.equal(
+      held?.observation?.resets.some((reset) => reset.reason === "gap"),
+      false,
+    );
+  } finally {
+    fixture.close();
+  }
+});
+
+test("a local polling suspension resets a target-contiguous window", async () => {
+  const fixture = setup();
+  const driver = target(fixture.base);
+  let localNow = fixture.base;
+  try {
+    fixture.coordinator.propose(fixture.contract, fixture.base);
+    fixture.coordinator.approve(
+      fixture.contract.id,
+      "U-OWNER",
+      fixture.contract.revision,
+      fixture.base + 10,
+    );
+    const supervisor = createSupervisor({
+      coordinator: fixture.coordinator,
+      adapter: driver.adapter,
+      intervalMs: 500,
+      now: () => localNow,
+    });
+
+    driver.advance(100);
+    localNow += 100;
+    await supervisor.tick();
+
+    // The target remains inside its configured 5s sample gap, but the local
+    // scheduler missed a complete polling opportunity.
+    driver.advance(1_000);
+    localNow += 1_500;
+    await supervisor.tick();
+
+    const held = fixture.store.get(fixture.contract.id);
+    assert.equal(held?.status, "OBSERVING");
+    assert.equal(held?.observation?.resets.at(-1)?.reason, "gap");
+    assert.equal(held?.observation?.windowStartedAt, driver.now());
+    assert.equal(held?.observation?.localWindowStartedAt, localNow);
+    assert.deepEqual(driver.state.promotions, []);
+  } finally {
+    fixture.close();
+  }
+});
+
 test("a failed read is reported and never advances the hold", async () => {
   const fixture = setup();
   const driver = target(fixture.base);

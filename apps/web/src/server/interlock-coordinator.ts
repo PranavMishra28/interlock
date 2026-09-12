@@ -6,6 +6,7 @@ import {
   markDispatchUncertain,
   observe,
   promotionAllowed,
+  resetObservation,
   verify,
   type Contract,
   type TrustedResource,
@@ -73,6 +74,12 @@ export class InterlockCoordinator {
   observe(id: string, value: number, observedAt: number, now = Date.now()) {
     const workflow = observe(this.required(id), value, observedAt, now);
     this.store.saveObservation(workflow, value, observedAt, now);
+    return workflow;
+  }
+
+  resetObservation(id: string, now = Date.now()) {
+    const workflow = resetObservation(this.required(id), "gap", now);
+    this.store.save(workflow, now);
     return workflow;
   }
 

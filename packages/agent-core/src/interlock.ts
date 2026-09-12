@@ -51,6 +51,7 @@ export type Observation = {
   value: number;
   observedAt: number;
   windowStartedAt: number | null;
+  localWindowStartedAt?: number | null;
   resets: { at: number; reason: ResetReason }[];
 };
 
@@ -155,9 +156,16 @@ export function resetObservation(
       ? {
           ...workflow.observation,
           windowStartedAt: null,
+          localWindowStartedAt: null,
           resets: [...workflow.observation.resets, { at, reason }],
         }
-      : { value: Number.NaN, observedAt: at, windowStartedAt: null, resets: [{ at, reason }] },
+      : {
+          value: Number.NaN,
+          observedAt: at,
+          windowStartedAt: null,
+          localWindowStartedAt: null,
+          resets: [{ at, reason }],
+        },
   };
 }
 
@@ -189,22 +197,41 @@ export function observe(
     return {
       ...workflow,
       status: "ACTIVE_HOLD",
-      observation: { value, observedAt, windowStartedAt: null, resets },
+      observation: {
+        value,
+        observedAt,
+        windowStartedAt: null,
+        localWindowStartedAt: null,
+        resets,
+      },
     };
   }
 
-  const windowStartedAt =
-    reason === "gap" || prior?.windowStartedAt == null
-      ? observedAt
-      : prior.windowStartedAt;
+  const startsWindow =
+    reason === "gap" ||
+    prior?.windowStartedAt == null ||
+    prior.localWindowStartedAt == null;
+  const windowStartedAt = startsWindow ? observedAt : prior!.windowStartedAt!;
+  const localWindowStartedAt = startsWindow
+    ? now
+    : prior.localWindowStartedAt!;
+  // Target time proves sample ordering and freshness, but only the coordinator's
+  // clock can prove that the approved duration actually elapsed.
   const status =
-    observedAt - windowStartedAt >= workflow.contract.windowMs
+    observedAt - windowStartedAt >= workflow.contract.windowMs &&
+    now - localWindowStartedAt >= workflow.contract.windowMs
       ? "READY"
       : "OBSERVING";
   return {
     ...workflow,
     status,
-    observation: { value, observedAt, windowStartedAt, resets },
+    observation: {
+      value,
+      observedAt,
+      windowStartedAt,
+      localWindowStartedAt,
+      resets,
+    },
   };
 }
 

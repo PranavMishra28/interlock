@@ -90,6 +90,7 @@ test("restart resets observation windows and preserves active holds", () => {
   workflow = observe(workflow, 0.3, 1_000, 1_010);
   const first = new InterlockStore(path);
   first.save(workflow);
+  assert.equal(first.get(contract.id)?.observation?.localWindowStartedAt, 1_010);
   first.close();
 
   const reopened = new InterlockStore(path);
@@ -97,6 +98,7 @@ test("restart resets observation windows and preserves active holds", () => {
     const recovered = reopened.get(contract.id);
     assert.equal(recovered?.status, "ACTIVE_HOLD");
     assert.equal(recovered?.observation?.windowStartedAt, null);
+    assert.equal(recovered?.observation?.localWindowStartedAt, null);
     assert.equal(recovered?.observation?.resets.at(-1)?.reason, "restart");
   } finally {
     reopened.close();

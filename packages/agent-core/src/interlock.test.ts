@@ -88,6 +88,37 @@ test("ordinary clock skew holds the window; a wrong clock resets it", () => {
   assert.equal(state.observation?.resets.at(-1)?.reason, "clock");
 });
 
+test("target timestamps cannot accelerate the elapsed evidence window", () => {
+  const accelerated = {
+    ...contract,
+    windowMs: 16_000,
+    maxSampleAgeMs: 20_000,
+    maxSampleGapMs: 20_000,
+    proposalExpiresAt: 200_000,
+  };
+  let state = approve(
+    createWorkflow(accelerated, trusted),
+    "U-OWNER",
+    3,
+    100_000,
+  );
+
+  state = observe(state, 0.3, 85_000, 100_000);
+  state = observe(state, 0.3, 102_000, 100_001);
+
+  assert.equal(state.status, "OBSERVING");
+});
+
+test("honest target and local clocks can close the elapsed evidence window", () => {
+  let state = approve(createWorkflow(contract, trusted), "U-OWNER", 3, 100);
+
+  state = observe(state, 0.3, 1_000, 1_010);
+  state = observe(state, 0.3, 1_500, 1_510);
+  state = observe(state, 0.3, 2_000, 2_010);
+
+  assert.equal(state.status, "READY");
+});
+
 test("claim is single-use, revalidates trust, and verifies the exact target", () => {
   let state = approve(createWorkflow(contract, trusted), "U-OWNER", 3, 100);
   state = observe(state, 0.3, 1_000, 1_010);

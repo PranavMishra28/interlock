@@ -38,8 +38,19 @@ export function createSupervisor(options: SupervisorOptions): Supervisor {
   const now = options.now ?? Date.now;
   let timer: ReturnType<typeof setInterval> | undefined;
   let running = false;
+  let lastTickAt: number | undefined;
 
   async function tick() {
+    // Liveness is recorded on every fire, including the ones that return early
+    // below. Suspension is the *absence* of fires, so a slow target still lets
+    // the timer fire on schedule and is not mistaken for a sleeping machine.
+    // Measuring between completed reads instead would let a target whose reads
+    // outrun the interval reset the window forever, and a hold that can never
+    // close is its own kind of failure.
+    const tickAt = now();
+    const previousTickAt = lastTickAt;
+    lastTickAt = tickAt;
+
     // A slow read must never overlap the next tick: two concurrent claims on
     // one workflow is exactly the duplicate-dispatch the contract forbids.
     if (running) return;
@@ -55,11 +66,21 @@ export function createSupervisor(options: SupervisorOptions): Supervisor {
       }
 
       const observed = await adapter.read();
+      const observedNow = now();
+      // Missing an entire polling opportunity leaves an interval with no
+      // evidence, even when target timestamps make the samples look contiguous.
+      if (
+        workflow.observation?.windowStartedAt != null &&
+        previousTickAt !== undefined &&
+        tickAt - previousTickAt >= intervalMs * 2
+      ) {
+        coordinator.resetObservation(id, observedNow);
+      }
       const recorded = coordinator.observe(
         id,
         observed.healthValue,
         observed.observedAt,
-        now(),
+        observedNow,
       );
       if (recorded.status === "READY") {
         await coordinator.continue(id, adapter, now());
