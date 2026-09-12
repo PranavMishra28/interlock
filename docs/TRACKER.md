@@ -338,7 +338,10 @@ before compaction.
 - Post-merge cleanup removed unused starter guides, inherited chat/voice/search
   surfaces, static Control Room fixtures, and the direct live-check harness.
   The local synthetic walkthrough still uses the real coordinator, SQLite
-  store, and supervisor path and remains explicitly synthetic.
+  store, and supervisor path and remains explicitly synthetic. Full
+  `bash scripts/check.sh` passed on the clean cleanup commit
+  `db1eb5c3ed729981e8ddf803d4e2d19f89a0828d:e6d5b0d9d1c1c32677d5b045cdc9f7eb8c5a0789`;
+  the walkthrough also reached one synthetic retained `v42` receipt.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
