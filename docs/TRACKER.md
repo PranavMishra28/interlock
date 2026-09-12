@@ -192,6 +192,35 @@ before compaction.
   prove live Slack delivery or approval, OpenAI behavior, or any GCP/Cloud Run
   observation or promotion. No external account, paid call, or deployment was
   used.
+- Scoped-identity live run and verification race 2026-09-12, evidence
+  `c780780c91f4c813fb00d20d5754991d446455bb:728dfb473ab8f4a9f7b083812939c494061a0a94`:
+  a bounded live run against `checkout` proved promotion now executes as the
+  dedicated `interlock-exec` identity rather than the operator. The token's
+  `azp` matched that service account's unique ID and no broad-ADC fallback
+  warning was emitted, so the impersonated path was genuinely in effect. IAM is
+  resource-scoped and key-free: `serviceAccountTokenCreator` for the maintainer
+  is bound on the execution account itself, `run.developer` on the `checkout`
+  service, `serviceAccountUser` on that service's runtime account, and the
+  execution account holds no project-level role. While health read 0.9 the
+  operation stayed refused and independent read-back confirmed `checkout-v41`
+  at 100% — traffic did not move. After the healthy window exactly one
+  promotion ran and the service now serves `checkout-v42` at 100% with health
+  0.1.
+  The run also exposed a real defect rather than a harness flake: the read-back
+  taken immediately after the traffic update still observed `checkout-v41`, so
+  an exactly-correct promotion was recorded as a mismatch, ending in
+  `NEEDS_INTERVENTION` with no retained receipt. Routing is eventually
+  consistent, and treating the first read as authoritative measured propagation
+  delay and called it a failure. Verification now re-reads on a bounded
+  schedule and fails closed unchanged when the target never converges; the loop
+  only reads, so waiting longer cannot become a second dispatch, and the
+  deadline is deliberately not a contract field. Retained receipts now carry
+  the accepted sample's timestamp. Offline suites: 11 agent-core, 20
+  channel-slack, 54 web.
+  CLOUD-1 therefore remains short of full live re-verification: refusal,
+  single dispatch, and the scoped identity are proven, but no receipt was
+  retained on that run. The target is currently left at `checkout-v42` at 100%
+  and must be reset to `checkout-v41` before the next rehearsal or recording.
 - Execution and interface correctness pass 2026-09-12, evidence
   `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151`:
   five defects found by review and closed with
@@ -278,7 +307,7 @@ may be useful but cannot make the original criterion green.
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
 | SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151` | DONE_IMPL (restart-safe approval; live path runs the validated Intent primitive) | ACCESS_REQUIRED (Channel present, Slack adapter absent) |
 | MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `0c784c9` | DONE_IMPL | LIVE_VERIFIED |
-| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151` | DONE_IMPL (promotion executes as a scoped impersonated identity) | LIVE_VERIFIED on the prior direct-credential path; re-verification through the scoped identity outstanding |
+| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `eda8d005f67bd328fbde9aec6a012800c605195f:9950af813f744858e33dd942ebf58da2f5e0e151` | DONE_IMPL (promotion executes as a scoped impersonated identity) | scoped identity, refusal without traffic movement, and exactly one dispatch proven live; receipt not retained on that run, so full re-verification is outstanding |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
 
