@@ -9,6 +9,18 @@ type AuthorizedUser = {
   refresh_token?: string;
 };
 
+export const CLOUD_RUN_SCOPES = [
+  "https://www.googleapis.com/auth/cloud-platform",
+] as const;
+
+type GoogleAccessTokenOptions = {
+  path?: string;
+  request?: typeof fetch;
+  impersonationTarget?: string;
+  onAdcFallback?: (message: string) => void;
+  now?: () => number;
+};
+
 /**
  * Application Default Credentials hold a `quota_project_id` that may name an
  * unrelated project. Interlock never forwards it: quota and billing must
@@ -22,14 +34,29 @@ export function adcPath() {
   );
 }
 
-export function googleAccessToken(
-  path = adcPath(),
-  request: typeof fetch = fetch,
-): () => Promise<string> {
+export function googleAccessToken(options: GoogleAccessTokenOptions = {}): () => Promise<string> {
+  const {
+    path = adcPath(),
+    request = fetch,
+    impersonationTarget = process.env.GOOGLE_IMPERSONATE_SERVICE_ACCOUNT,
+    onAdcFallback = console.warn,
+    now = Date.now,
+  } = options;
   let cached: { token: string; expiresAt: number } | undefined;
+  let warnedAboutAdc = false;
 
   return async () => {
-    if (cached && Date.now() < cached.expiresAt) return cached.token;
+    if (cached && now() < cached.expiresAt) return cached.token;
+
+    const target = impersonationTarget?.trim();
+    if (!target && !warnedAboutAdc) {
+      // Local fallback keeps the verified path available, but must never look
+      // equivalent to the least-privilege execution identity.
+      onAdcFallback(
+        "GOOGLE_IMPERSONATE_SERVICE_ACCOUNT is unset; Cloud Run uses broad ADC fallback.",
+      );
+      warnedAboutAdc = true;
+    }
 
     let credential: AuthorizedUser;
     try {
@@ -67,10 +94,48 @@ export function googleAccessToken(
     if (typeof token.access_token !== "string" || !token.access_token) {
       throw new Error("Google token exchange returned no access token.");
     }
-    const lifetime = typeof token.expires_in === "number" ? token.expires_in : 3_600;
+
+    let accessToken = token.access_token;
+    let lifetime = typeof token.expires_in === "number" ? token.expires_in : 3_600;
+    if (target) {
+      const impersonated = await request(
+        `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(target)}:generateAccessToken`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            scope: CLOUD_RUN_SCOPES,
+            lifetime: "3600s",
+          }),
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
+      if (!impersonated.ok) {
+        throw new Error(
+          `Google service-account impersonation failed (${impersonated.status}).`,
+        );
+      }
+      const generated = await impersonated.json() as {
+        accessToken?: string;
+        expireTime?: string;
+      };
+      if (typeof generated.accessToken !== "string" || !generated.accessToken) {
+        throw new Error("Google impersonation returned no access token.");
+      }
+      const expiresAt = Date.parse(generated.expireTime ?? "");
+      if (!Number.isFinite(expiresAt) || expiresAt <= now()) {
+        throw new Error("Google impersonation returned an invalid expiry.");
+      }
+      accessToken = generated.accessToken;
+      lifetime = (expiresAt - now()) / 1_000;
+    }
+
     cached = {
-      token: token.access_token,
-      expiresAt: Date.now() + Math.max(lifetime - 60, 30) * 1_000,
+      token: accessToken,
+      expiresAt: now() + Math.max(lifetime - 60, 30) * 1_000,
     };
     return cached.token;
   };
