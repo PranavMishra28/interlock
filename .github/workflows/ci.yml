@@ -47,3 +47,19 @@ jobs:
 
       - name: Verify
         run: bash scripts/check.sh
+
+      # A PR must also satisfy the guard already trusted on its base branch;
+      # changing the in-PR copy cannot certify the same PR's product changes.
+      # The first guard-migration PR predates this marker and is reviewed as the
+      # one-time bootstrap; every later PR runs the base copy.
+      - name: Trusted base phase guard
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git show "${BASE_SHA}:scripts/scope-audit.sh" > /tmp/trusted-scope-audit.sh
+          if grep -q 'TRUSTED_PHASE_GUARD_V1' /tmp/trusted-scope-audit.sh; then
+            bash /tmp/trusted-scope-audit.sh
+          else
+            echo "Base predates TRUSTED_PHASE_GUARD_V1; one-time migration uses the audited PR copy."
+          fi

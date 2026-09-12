@@ -5,7 +5,7 @@
 #
 # Runs, in order: lockfile drift, inherited `npm run verify` (typecheck of all
 # workspaces, inherited tests, MCP stdio round trip), the web build, the
-# pre-event scope audit, and a pin check on GitHub Actions. Needs no
+# phase/scope audit and its negative tests, and a pin check on GitHub Actions. Needs no
 # credentials and makes no paid calls. No formatter or linter is inherited;
 # TypeScript strict typecheck is the static check (adding one is a lockfile
 # change and therefore a reviewed decision, not a silent addition).
@@ -26,8 +26,20 @@ run npm run verify
 step "Web build — apps/web (selected template)"
 run npm run build --workspace web
 
-step "Scope audit — inherited sources vs recorded baseline"
+step "Phase guard — scope/provenance and negative cases"
 run bash scripts/scope-audit.sh
+run bash scripts/scope-audit.test.sh
+
+step "GitHub Actions — no privileged triggers, secrets, writes, deploys, or publishing"
+forbidden=$(grep -RniE \
+  'pull_request_target:|secrets[.:]|permissions:[[:space:]]*write-all|[[:space:]][a-z-]+:[[:space:]]*write([[:space:]]|$)|npm[[:space:]]+publish|gcloud[[:space:]]+run[[:space:]]+deploy|docker[[:space:]]+push|gh[[:space:]]+release' \
+  .github/workflows | grep -vE ':[0-9]+:[[:space:]]*#' || true)
+if [ -z "$forbidden" ]; then
+  printf '  \033[32m✓\033[0m workflow policy is read-only and non-deploying\n'
+else
+  printf '  \033[31m✗\033[0m forbidden workflow content:\n%s\n' "$forbidden"
+  FAILED=1
+fi
 
 step "GitHub Actions — every third-party action pinned to a full commit SHA"
 uses=$(grep -rhoE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*[^#]+' .github/workflows | sed -E 's/^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*//' || true)
