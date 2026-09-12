@@ -11,13 +11,10 @@ next action.
 
 ## Checkpoint
 
-- Inspected branch/HEAD: `prep-audit-simplify` at
-  `76897ddd227c4d3f06e35063679e7189d075f747` before this preparation diff.
-- Last checkpoint: 2026-09-12 01:34 PDT.
-- Dirty paths: `.github/workflows/ci.yml`, `.hackathon-phase`, `AGENTS.md`,
-  `HACKATHON_PROVENANCE.md`, `README.md`, `SECURITY.md`, `SUBMISSION.md`,
-  `docs/{PLAN,READINESS,RUNBOOK,SUBMISSION,TRACKER}.md`,
-  `scripts/{check,scope-audit,scope-audit.test}.sh`.
+- Inspected branch/HEAD: `prep-audit-simplify` at `851b745` before this status
+  update; base is `76897ddd227c4d3f06e35063679e7189d075f747`.
+- Last checkpoint: 2026-09-12 01:37 PDT.
+- Dirty paths: this tracker and provenance update only; clean after commit.
 - Active writer: lead agent owns the branch and shared status.
 - Read-only workers: eligibility/provenance; security/correctness;
   feasibility/demo/context continuity. They return findings only.
@@ -93,7 +90,7 @@ correlated evidence. Conflicts fail closed.
 | PREP-04 Dependency exposure review | PREP-01 | DONE | GitHub alerts and `npm audit` inspected; compatible lock-only trial changed nothing; restrictions in READINESS |
 | PREP-05 Three read-only reviews | PREP-02, PREP-03 | DONE | Findings and one repair loop recorded above |
 | PREP-06 Offline/browser/context-reset verification | PREP-02..05 | DONE | `check.sh` passed in 49 s at 01:34 PDT; inherited page/browser APIs loaded with no failed resource/model call; history/source/artifact/task-log gitleaks scans found no leak; feasibility fresh-context review exposed and drove the tracker/runbook/topology fixes |
-| PREP-07 PR, CI, merge, remote read-back | PREP-06 | IN_PROGRESS | Requires PR URL, green `verify`, merged SHA, protected-setting read-back, clean local status |
+| PREP-07 PR, CI, merge, remote read-back | PREP-06 | IN_PROGRESS | [PR #3](https://github.com/PranavMishra28/interlock/pull/3) open; requires green `verify`, merged SHA, protected-setting read-back, clean local status |
 | P0 Official opening and deliberate transition | PREP-07 | BLOCKED | Requires official opening plus explicit maintainer authorization and budget |
 | P1 Deterministic vertical slice | P0 | BLOCKED | See RUNBOOK; real target response required for live-complete |
 | P2 Contextual agency | P1 | BLOCKED | See RUNBOOK; context-removal and authority cases required |
@@ -114,8 +111,8 @@ test, URL, commit, or other observed result—not generated code or a checkbox.
 
 ## Exact next action
 
-Lead: commit the audited preparation diff, push `prep-audit-simplify`, open the
-preparation PR, require green `verify`, then merge and read back HEAD/settings.
+Lead: push this status commit, require green `verify` on PR #3, then merge,
+enable admin enforcement for `verify`, and read back HEAD/settings.
 
 ## Resume protocol
 

@@ -102,7 +102,7 @@ commit—not a timestamp and not the old tag alone—is the event boundary.
 
 | Preparation commit / PR | Change | Product core? |
 |---|---|---|
-| _current preparation PR; fill after merge_ | audit, simplified topology prose, tracker/runbook, phase guard and generic negative tests | no |
+| [PR #3](https://github.com/PranavMishra28/interlock/pull/3), commits `43be666` and `851b745` | audit, simplified topology prose, tracker/runbook, phase guard and generic negative tests | no |
 
 ## Event work (fill only during an authorized BUILD_ACTIVE phase)
 
