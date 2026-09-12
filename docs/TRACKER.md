@@ -179,6 +179,19 @@ before compaction.
     loading region after hydration, no horizontal overflow, a visibly labeled
     synthetic source, and textual state/threshold/window/reset alternatives to
     semantic color and the plot.
+- Local synthetic demo evidence
+  `99468f5ce3fd9086ff47dec12b93010143d07efd:c8abe9f84e6a094d47cd69848123104c718ea7cc`:
+  web typecheck, all 43 web tests, the production web build, and the subsequent
+  full `bash scripts/check.sh` passed on the exact stable working tree. The
+  loopback demo uses the real store, coordinator, and supervisor with one
+  in-process synthetic target; it persists one approved revision-bound
+  contract, starts unhealthy so promotion remains refused, then supplies a
+  six-second healthy window for one continuation and supports a repeatable
+  `--reset`. Its snapshot and UI are explicitly labeled synthetic. This proves
+  only the local synthetic workflow and restart/allowlist behavior; it does not
+  prove live Slack delivery or approval, OpenAI behavior, or any GCP/Cloud Run
+  observation or promotion. No external account, paid call, or deployment was
+  used.
 - Live GCP evidence: dedicated personal project `interlock-508417` provisioned
   in `us-central1` inside the $0 Always Free envelope, isolated in the named
   gcloud configuration `interlock`. `checkout-v41` serves 100%; candidate

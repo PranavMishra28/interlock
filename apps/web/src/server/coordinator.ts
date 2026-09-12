@@ -14,6 +14,7 @@ type CoordinatorOptions = {
   allowedWorkspaceId?: string;
   allowedChannelId?: string;
   workflowCoordinator?: InterlockCoordinator;
+  evidenceSource?: "coordinator" | "synthetic";
   now?: () => number;
 };
 
@@ -87,6 +88,7 @@ export function createCoordinator(
       response.end(
         JSON.stringify({
           asOf: now(),
+          source: options.evidenceSource ?? "coordinator",
           coordinator: { connected: true },
           listener: heartbeatAge != null && heartbeatAge <= 30_000
             ? { connected: true, lastSeenAt: listenerLastSeenAt }

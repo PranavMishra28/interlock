@@ -3,6 +3,7 @@ import {
   createWorkflow,
   observe,
   type Workflow,
+  type WorkflowStatus,
 } from "agent-core/interlock";
 
 export type ControlRoomSnapshot = {
@@ -40,6 +41,14 @@ export const fixtureStates: FixtureState[] = [
 
 export function healthChartY(value: number) {
   return 136 - Math.min(2.2, Math.max(0, value)) / 2.2 * 112;
+}
+
+export function executionGate(status: WorkflowStatus) {
+  if (status === "RETIRED") return "Closed · verified receipt retained";
+  if (status === "NEEDS_INTERVENTION") return "Blocked · operator intervention";
+  if (status === "DISPATCHING") return "Claimed once · verification pending";
+  if (status === "READY") return "Eligible · awaiting atomic claim";
+  return "Blocked · active hold";
 }
 
 /**
@@ -203,7 +212,13 @@ export async function loadSnapshot(
       signal: AbortSignal.timeout(1_000),
     });
     if (!response.ok) throw new Error(`Coordinator returned ${response.status}`);
-    return { ...(await response.json() as Omit<ControlRoomSnapshot, "source">), source: "coordinator" };
+    const snapshot = await response.json() as ControlRoomSnapshot;
+    return {
+      ...snapshot,
+      // Only the explicit synthetic marker changes evidence semantics. Unknown
+      // or omitted values fail closed to coordinator data.
+      source: snapshot.source === "synthetic" ? "synthetic" : "coordinator",
+    };
   } catch (error) {
     return {
       asOf: Date.now(),

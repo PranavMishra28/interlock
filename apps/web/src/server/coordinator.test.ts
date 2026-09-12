@@ -11,7 +11,7 @@ import { InterlockCoordinator } from "./interlock-coordinator";
 test("loopback coordinator exposes read-only persisted state", async () => {
   const dir = mkdtempSync(join(tmpdir(), "interlock-coordinator-"));
   const store = new InterlockStore(join(dir, "state.db"));
-  const server = createCoordinator(store);
+  const server = createCoordinator(store, { evidenceSource: "synthetic" });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
     const address = server.address();
@@ -19,10 +19,12 @@ test("loopback coordinator exposes read-only persisted state", async () => {
     const response = await fetch(`http://127.0.0.1:${address.port}/v1/snapshot`);
     assert.equal(response.status, 200);
     const snapshot = await response.json() as {
+      source: string;
       coordinator: { connected: boolean };
       listener: { connected: boolean };
       workflow: unknown;
     };
+    assert.equal(snapshot.source, "synthetic");
     assert.equal(snapshot.coordinator.connected, true);
     assert.equal(snapshot.listener.connected, false);
     assert.equal(snapshot.workflow, null);

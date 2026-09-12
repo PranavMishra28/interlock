@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --turbopack -p 3100",
     "coordinator": "node --env-file-if-exists=../../.env --import tsx src/server/coordinator.ts",
+    "demo": "node --env-file-if-exists=../../.env --import tsx src/server/demo.ts",
     "build": "next build",
     "start": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next start --hostname 127.0.0.1 -p 3100",
     "typecheck": "tsc --noEmit",

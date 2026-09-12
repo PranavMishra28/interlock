@@ -1,5 +1,6 @@
 import {
   emptyState,
+  executionGate,
   fixtureStates,
   healthChartY,
   loadSnapshot,
@@ -91,6 +92,7 @@ export default async function Home({
               <div><dt>Resource</dt><dd>{workflow.contract.resourceId}</dd></div>
               <div><dt>Owner / approval</dt><dd>{workflow.contract.ownerId} · r{workflow.approval?.revision ?? "—"}</dd></div>
               <div><dt>Policy</dt><dd>≤ {workflow.contract.threshold} for {workflow.contract.windowMs / 1_000}s</dd></div>
+              <div><dt>Execution gate</dt><dd>{executionGate(workflow.status)}</dd></div>
               <div><dt>Next</dt><dd>{next[workflow.status]}</dd></div>
               <div><dt>Coordinator</dt><dd className={snapshot.coordinator.connected ? "is-good" : "is-bad"}>{snapshot.coordinator.connected ? "Connected" : "Unavailable"}</dd></div>
               <div><dt>Slack listener</dt><dd className={snapshot.listener.connected ? "is-good" : "is-stale"}>{snapshot.listener.connected ? "Connected" : "Not connected"}</dd></div>
