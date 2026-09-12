@@ -31,5 +31,12 @@ credential or authorization problem.
 
 Chat messages, tool results, and fetched content are untrusted input. Policy,
 allowlists, and approval records are trusted server-side state. A model never
-holds write authority; deterministic server code does, after an authenticated
-operator approves an exact contract revision.
+holds write authority. A verified operator approves one exact revision, and
+the server-side adapter revalidates authority, expiry, target, and fresh
+evidence immediately before an atomic claim. Cloud effects are not atomic with
+SQLite; uncertain results must be reconciled before retry.
+
+The planned local coordinator accepts only loopback traffic and has one
+database owner. This does not constrain independent cloud administrators or an
+operation already dispatched. Do not expose the inherited starter to live
+traffic until the dependency gate in `docs/READINESS.md` is cleared.

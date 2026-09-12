@@ -1,70 +1,113 @@
 #!/usr/bin/env bash
-# Pre-event scope audit (repository evidence only).
-#
-# Inherited starter sources must still be byte-identical to the recorded
-# baseline commit, and every other tracked or untracked change must sit inside
-# the bootstrap allowlist below. This proves what is in the repository; it
-# proves nothing about work outside it.
-#
-# During the official build period: extend ALLOW (or replace this check with a
-# report) in the same commit that starts event work, so the diff is explicit.
+# Phase guard and provenance report. Repository evidence only.
+# TRUSTED_PHASE_GUARD_V1: PR CI also runs the base branch's copy.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-# Commit that imported CopilotKit/agents-everywhere-starter-kit@2622f07d17850ad68bb9a7266c566c1fefc97df4
-# as a verbatim subset. See HACKATHON_PROVENANCE.md.
-BASELINE=79b036635c01d932374bed1013b901283f421096
+IMPORT_BASELINE=79b036635c01d932374bed1013b901283f421096
+PRE_EVENT_TAG_COMMIT=76897ddd227c4d3f06e35063679e7189d075f747
+PHASE_FILE=.hackathon-phase
 
-# Bootstrap-only paths allowed to differ from the baseline before the event.
-ALLOW=(
-  .github/
-  .gitignore
-  AGENTS.md
-  CLAUDE.md
-  README.md
-  SECURITY.md
-  HACKATHON_PROVENANCE.md
-  docs/
-  scripts/check.sh
-  scripts/scope-audit.sh
-)
+die() { echo "scope-audit: $*" >&2; exit 1; }
+value() {
+  key=$1
+  count=$(grep -c "^${key}=" "$PHASE_FILE" || true)
+  [ "$count" = 1 ] || die "$PHASE_FILE must contain exactly one ${key}= line"
+  sed -n "s/^${key}=//p" "$PHASE_FILE"
+}
 
-if ! git cat-file -e "${BASELINE}^{commit}" 2>/dev/null; then
-  echo "scope-audit: baseline commit ${BASELINE} is not in this clone (shallow fetch?)." >&2
-  exit 1
-fi
+[ -f "$PHASE_FILE" ] || die "missing $PHASE_FILE (unknown phase fails closed)"
+[ "$(wc -l < "$PHASE_FILE" | tr -d ' ')" = 3 ] ||
+  die "$PHASE_FILE must contain exactly PHASE, AUTHORIZATION, PREBUILD_COMMIT"
 
-# Tracked changes (committed or not) against the baseline, plus untracked files.
-# --no-renames: a rename of an inherited file into an allowlisted dir must
-# still show the inherited path as deleted.
-changed="$( { git diff --name-only --no-renames "$BASELINE"; git ls-files --others --exclude-standard; } | sort -u)"
+phase=$(value PHASE)
+authorization=$(value AUTHORIZATION)
+prebuild=$(value PREBUILD_COMMIT)
 
-violations=()
-while IFS= read -r path; do
-  [ -z "$path" ] && continue
-  ok=0
-  for allow in "${ALLOW[@]}"; do
-    case "$allow" in
-      */) case "$path" in "$allow"*) ok=1 ;; esac ;;   # directory prefix
-      *)  [ "$path" = "$allow" ] && ok=1 ;;            # exact file
-    esac
-    [ "$ok" = 1 ] && break
-  done
-  [ "$ok" = 1 ] || violations+=("$path")
-done <<<"$changed"
+git cat-file -e "${IMPORT_BASELINE}^{commit}" 2>/dev/null ||
+  die "import baseline $IMPORT_BASELINE is unavailable (shallow clone?)"
+tag_commit=$(git rev-list -n1 pre-event-baseline 2>/dev/null || true)
+[ "$tag_commit" = "$PRE_EVENT_TAG_COMMIT" ] ||
+  die "pre-event-baseline is missing or moved (expected $PRE_EVENT_TAG_COMMIT)"
 
-# docs/ is allowlisted for prose and labeled screenshots only; code hidden
-# there is still code.
-while IFS= read -r path; do
-  [ -n "$path" ] && violations+=("$path (non-prose file under docs/)")
-done < <(git ls-files --cached --others --exclude-standard -- docs | grep -vE '\.(md|png)$' || true)
+case "$phase" in
+  PREP_ONLY)
+    [ "$authorization" = UNRECORDED ] && [ "$prebuild" = UNRECORDED ] ||
+      die "PREP_ONLY requires AUTHORIZATION=UNRECORDED and PREBUILD_COMMIT=UNRECORDED"
 
-total=$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l | tr -d ' ')
-echo "scope-audit: baseline ${BASELINE:0:12}, ${total} path(s) differ, ${#violations[@]} outside allowlist"
+    # Exact files plus prose/image docs. Broad directory prefixes would let
+    # product code hide inside an allowlisted directory.
+    ALLOW=(
+      .hackathon-phase
+      .github/dependabot.yml
+      .github/workflows/ci.yml
+      .gitignore
+      AGENTS.md
+      CLAUDE.md
+      README.md
+      SECURITY.md
+      SUBMISSION.md
+      HACKATHON_PROVENANCE.md
+      scripts/check.sh
+      scripts/scope-audit.sh
+      scripts/scope-audit.test.sh
+    )
 
-if [ "${#violations[@]}" -gt 0 ]; then
-  printf '  ✗ %s\n' "${violations[@]}"
-  echo "scope-audit: inherited sources changed outside the bootstrap allowlist (PREP_ONLY)." >&2
-  exit 1
-fi
-echo "  ✓ inherited starter sources match the recorded baseline"
+    changed="$( {
+      git diff --name-only --no-renames "$IMPORT_BASELINE"
+      git ls-files --others --exclude-standard
+    } | sort -u)"
+    violations=()
+    while IFS= read -r file; do
+      [ -z "$file" ] && continue
+      ok=0
+      case "$file" in
+        docs/*.md|docs/*.png|docs/*/*.md|docs/*/*.png) ok=1 ;;
+      esac
+      if [ "$ok" = 0 ]; then
+        for allow in "${ALLOW[@]}"; do
+          [ "$file" = "$allow" ] && { ok=1; break; }
+        done
+      fi
+      [ "$ok" = 1 ] || violations+=("$file")
+    done <<<"$changed"
+
+    total=$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l | tr -d ' ')
+    echo "scope-audit: PREP_ONLY; import ${IMPORT_BASELINE:0:12}; ${total} changed path(s); ${#violations[@]} violation(s)"
+    if [ "${#violations[@]}" -gt 0 ]; then
+      printf '  ✗ %s\n' "${violations[@]}"
+      die "product/inherited paths changed during PREP_ONLY"
+    fi
+    echo "  ✓ inherited application source and lockfile remain frozen"
+    ;;
+
+  BUILD_ACTIVE)
+    [ "$authorization" = RECORDED ] ||
+      die "BUILD_ACTIVE requires AUTHORIZATION=RECORDED"
+    printf '%s' "$prebuild" | grep -Eq '^[0-9a-f]{40}$' ||
+      die "BUILD_ACTIVE requires a full PREBUILD_COMMIT SHA"
+    git cat-file -e "${prebuild}^{commit}" 2>/dev/null ||
+      die "PREBUILD_COMMIT $prebuild is unavailable"
+    git merge-base --is-ancestor "$prebuild" HEAD ||
+      die "PREBUILD_COMMIT must be an ancestor of HEAD"
+    [ "$prebuild" != "$(git rev-parse HEAD)" ] ||
+      die "BUILD_ACTIVE must be recorded in a later transition commit"
+    git diff --quiet HEAD -- "$PHASE_FILE" docs/TRACKER.md HACKATHON_PROVENANCE.md ||
+      die "phase, tracker, and provenance transition must be committed"
+    grep -qx 'Phase: BUILD_ACTIVE' docs/TRACKER.md ||
+      die "TRACKER phase does not match BUILD_ACTIVE"
+    grep -qx 'Build authorization: RECORDED' docs/TRACKER.md ||
+      die "TRACKER does not record maintainer authorization"
+    grep -qx "Final pre-build commit: \`$prebuild\`" docs/TRACKER.md ||
+      die "TRACKER pre-build commit does not match $PHASE_FILE"
+    grep -q '^## Status: BUILD_ACTIVE' HACKATHON_PROVENANCE.md ||
+      die "provenance does not record BUILD_ACTIVE"
+
+    echo "scope-audit: BUILD_ACTIVE; provenance changes since final pre-build commit $prebuild"
+    git diff --name-status --no-renames "$prebuild"
+    ;;
+
+  *)
+    die "unknown PHASE=$phase (only a committed phase file can change mode)"
+    ;;
+esac
