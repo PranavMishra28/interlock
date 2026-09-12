@@ -11,21 +11,23 @@ at `2622f07d17850ad68bb9a7266c566c1fefc97df4` (MIT), imported at
 `79b036635c01d932374bed1013b901283f421096`. The web and Slack examples,
 agent factory, sample incident, and inherited tests are not event work.
 
-Event contribution: commits `bfbcbc4..87fe0b8` build the deterministic
-workflow, sole-owner SQLite coordinator, ambient Slack ingress and approval
-boundary, bounded intent contract, Cloud Run adapter contract, and Control
-Room. See the Event work table in `HACKATHON_PROVENANCE.md`. Never
-describe planning prose, starter behavior, or an approval click as implemented
-Interlock functionality.
+Event contribution through the current implementation checkpoint is
+`dc42655^..ad6f8c7`. It includes the deterministic workflow, sole-owner SQLite
+coordinator, supervisor, ambient Slack ingress and approval boundary, bounded
+intent contract and live evaluation harness, Cloud Run adapter and live target
+exercise, Control Room, and local synthetic rehearsal. See the Event work table
+in `HACKATHON_PROVENANCE.md` for the immutable boundary and earlier commit
+ledger. Never describe planning prose, starter behavior, an approval click, or
+synthetic rehearsal evidence as live Interlock functionality.
 
 ## Criterion-to-evidence checklist
 
 | Official criterion | Required visible evidence | Status |
 |---|---|---|
-| Core Requirements & Functionality | the authorized Slack channel and real Cloud Run target complete the bounded loop; any fallback remains separately labeled | offline implementation passes; live blocked |
-| Innovation & Theme Alignment | conversation/page context materially resolves the decision; context-removal case abstains | deterministic eval passes; live model blocked |
-| Technical Execution & Integration | hold refuses the operation; interrupted recovery resets; uncertain/wrong-revision behavior stays failed; target is read back | offline integration/reliability tests pass; live target blocked |
-| Usefulness & Agentic Experience | the trusted configured owner approves the exact revision, sees timestamps/state, and retains an auditable receipt | offline authority/UI states pass; live Slack blocked |
+| Core Requirements & Functionality | the authorized Slack channel and real Cloud Run target complete the bounded loop; any fallback remains separately labeled | implementation passes; Cloud Run is live-verified; complete loop blocked on Slack access |
+| Innovation & Theme Alignment | conversation/page context materially resolves the decision; context-removal case abstains | deterministic evaluation passes; bounded live model evaluation passed 9/9 on three consecutive runs |
+| Technical Execution & Integration | hold refuses the operation; interrupted recovery resets; uncertain/wrong-revision behavior stays failed; target is read back | offline integration/reliability tests pass; live Cloud Run refusal, recovery, one promotion, and independent read-back verified |
+| Usefulness & Agentic Experience | the trusted configured owner approves the exact revision, sees timestamps/state, and retains an auditable receipt | offline authority/UI states pass; live Slack delivery and approval remain `ACCESS_REQUIRED` |
 
 - [ ] Every claim maps to a test, receipt, live read-back, or video timestamp.
 - [ ] Inherited, event-built, fake, synthetic, local, and cloud behavior are
@@ -65,13 +67,15 @@ Interlock functionality.
 - Public repository: https://github.com/PranavMishra28/interlock
 - Description: Ambient operational constraints for Slack, with explicit
   approval and verified outcomes.
-- Event-built files/commits: `dc42655..87fe0b8`; detailed in
+- Event-built files/commits through the current implementation checkpoint:
+  `dc42655^..ad6f8c7`; the immutable boundary is recorded in
   `HACKATHON_PROVENANCE.md`
-- Planned surface/target: one authorized Slack incident channel / one
-  event-created Cloud Run revision; neither is live-verified
-- Known limitations: live Slack, OpenAI, and GCP checks are blocked on personal
-  access and explicit spending limits; dependency alerts still block public
-  exposure; the coordinator is single-machine and Node SQLite is experimental.
+- Surface/target: one authorized Slack incident channel / one event-created
+  Cloud Run revision; Cloud Run is live-verified, while Slack is not
+- Known limitations: Slack remains `ACCESS_REQUIRED`, so RELEASE-1 and DEMO-1
+  remain blocked; the local rehearsal is synthetic and proves no external
+  integration; dependency alerts still block public exposure; the coordinator
+  is single-machine and Node SQLite is experimental.
 - Demo video URL: _none_
 - Social post text/URL: _none_
 

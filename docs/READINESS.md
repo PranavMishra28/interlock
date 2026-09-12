@@ -22,7 +22,7 @@ Observed 2026-09-12 PDT:
 | git | 2.55.0 |
 | GitHub CLI | 2.96.0; personal `PranavMishra28` session |
 | gitleaks | installed |
-| gcloud | installed, but no authorized personal Interlock project |
+| gcloud | installed; personal `interlock` configuration targets provisioned project `interlock-508417` |
 | jq | `/opt/homebrew/bin/jq`; required by project hook scripts |
 | Cursor IDE | 3.20.17; trusted project hooks supported |
 | Cursor Agent CLI | 2026.03.30-a5d3e17; resume flags available; not authenticated |
@@ -77,11 +77,11 @@ platform’s secret store. A package or placeholder is not authentication.
 |---|---|---|---|---|---|---|
 | Local coordinator + SQLite | Node 22 native `node:sqlite` | sole durable workflow/store | `INTERLOCK_DB_PATH` and `INTERLOCK_COORDINATOR_TOKEN` in ignored `.env` | writable local directory; one coordinator owner | create/reopen disposable DB; prove second owner fails; restart recovery test | **OFFLINE_READY** (implemented; native API remains experimental) |
 | Control Room session | existing Next web + local coordinator | read-only evidence display; no mutating web controls exist | none for read-only loopback page; reserved `INTERLOCK_OPERATOR_TOKEN`, `INTERLOCK_SESSION_SECRET`, `INTERLOCK_OPERATOR_ID` only if authenticated controls are later added | loopback-only browser/coordinator | synthetic states visibly labeled; coordinator failure, stale/gap/empty/intervention/receipt states checked | **OFFLINE_READY** (read-only) |
-| OpenAI model | inherited runtime / `@ai-sdk/openai` | bounded interpretation only | `OPENAI_API_KEY`, `MODEL=gpt-5.4-mini-2026-03-17`, `MODEL_PROVIDER=openai` in ignored `.env` | personal account/project; hard event cap $100 USD | model list proved the pinned snapshot exists; bounded behavior/cost eval remains | **OFFLINE_READY** (key/model/budget configured; live eval pending) |
-| CopilotKit web | inherited packages | base for the future evidence-only Control Room | inherited OpenAI names above only for starter chat | model key for inherited live chat | offline build/info route exercised; no Interlock round trip exists | **OFFLINE_READY** |
+| OpenAI model | inherited runtime / `@ai-sdk/openai` | bounded interpretation only | `OPENAI_API_KEY`, `MODEL=gpt-5.4-mini-2026-03-17`, `MODEL_PROVIDER=openai` in ignored `.env` | personal account/project; hard event cap $100 USD | pinned snapshot present; bounded live evaluation passed 9/9 on three consecutive runs | **LIVE_VERIFIED** |
+| CopilotKit web | inherited packages | host for the read-only Control Room | inherited OpenAI names above only for starter chat | model key for inherited live chat; none for synthetic Control Room | Control Room tests/build and loopback browser states exercised; no live Slack round trip exists | **OFFLINE_READY** |
 | Slack primary | inherited `@copilotkit/channels` transport, behavior replaced after P0 | ambient conversation and exact-owner approval in one authorized incident channel | `INTELLIGENCE_API_KEY`, `CHANNEL_CODE`, `INTERLOCK_COORDINATOR_URL`, `INTERLOCK_COORDINATOR_TOKEN`, `INTERLOCK_SLACK_WORKSPACE_ID`, `INTERLOCK_SLACK_CHANNEL_ID`, `INTERLOCK_OWNER_ID` in ignored server config | personal workspace/app, generated manifest, channel install, required scopes/events/interactivity | brand-new unmentioned top-level message and unmentioned reply each arrive once; edits/thread provenance retained; stable actor; bot/duplicate suppressed; configured owner’s exact-revision button callback arrives once | **ACCESS_REQUIRED** (offline ingress/authority tests pass) |
-| Cloud Run target | direct Cloud Run v2 REST adapter; no new package | one prepared revision promotion and independent read-back | personal named gcloud config; ADC impersonating dedicated execution SA; `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_REGION`, `INTERLOCK_TARGET_SERVICE`, `INTERLOCK_TARGET_REVISION`, `INTERLOCK_TARGET_URL` in ignored `.env` | dedicated personal project with billing attached; stay inside always-free quotas | confirm active personal project without printing tokens; read service; denied non-allowlisted target; promote allowed revision; read routing and fresh health | **ACCESS_REQUIRED** (budget recorded; project still missing) |
-| Local fallback target | existing local runtime chosen at P0 | honest fallback if cloud access fails | local target URL in ignored `.env` | genuinely running local process | dispatch, read-back, restart/reset; UI labels “local” | **OFFLINE_READY** (not built) |
+| Cloud Run target | direct Cloud Run v2 REST adapter; no new package | one prepared revision promotion and independent read-back | personal named gcloud config; ADC impersonating dedicated execution SA; `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_REGION`, `INTERLOCK_TARGET_SERVICE`, `INTERLOCK_TARGET_REVISION`, `INTERLOCK_TARGET_URL` in ignored `.env` | provisioned dedicated personal project with billing attached; stay inside always-free quotas | observed unhealthy refusal without traffic movement, clean-window continuation, one promotion, and independent revision/routing/health read-back, executed on direct user ADC rather than the scoped execution service account named here | **LIVE_VERIFIED** (least-privilege execution identity outstanding) |
+| Local synthetic target | `apps/web/src/server/demo.ts` | truthful local rehearsal independent of external access | no external credential; persistent `.interlock/demo.db` | loopback Node process | `npm run demo --workspace web -- --reset`; real store/coordinator/supervisor, synthetic target, refusal/recovery/one continuation, restart/reset, explicit synthetic labels | **OFFLINE_READY** (implemented) |
 | Trigger.dev / Firestore / executor fleet / Auth0 | not installed | future hosted topology | none for MVP | separate reviewed design | none | **DEFERRED** |
 
 OpenAI budget authorization recorded 2026-09-12: hard event cap **$100 USD**,
@@ -92,6 +92,15 @@ $0.75 / million input tokens and $4.50 / million output tokens. Live
 interpretation is one bounded semantic role; do not add narration or retry
 loops. Record call count, latency, approximate token cost, and pass/fail.
 Stop before the hard cap; coding subscriptions do not imply API credits.
+
+Live evaluation recorded 2026-09-12 against
+`gpt-5.4-mini-2026-03-17`: 9/9 on three consecutive runs. The bounded set
+covered an explicit decision, hypothetical, negation, missing parameters,
+unknown resource, unsupported condition family, prompt injection, forged owner
+approval, and a decision embedded in incident chatter. TRACKER records
+approximately $0.03 cumulative event spend against the $100 cap. The model
+interprets attributed context only; coordinator and server-signed approval
+boundaries retain authority.
 
 Slack scope after the committed P0 transition: exactly one
 administrator-authorized incident channel. Confirm generated event
@@ -252,9 +261,11 @@ them from the baseline evidence above.
    authorize every custom pre-event integration. No custom integration is made.
 2. Official opening and explicit maintainer authorization were recorded at the
    P0 transition; the portal deadline must still be checked before submission.
-3. Personal Slack setup is not live-verified. OpenAI is configured with a
-   $100 hard event cap and economical pinned model; bounded live eval remains.
-4. Dependency reachability/remediation must be resolved before live traffic.
+3. Personal Slack setup is not live-verified. OpenAI and the dedicated Cloud
+   Run target have bounded live evidence, but neither substitutes for Slack.
+4. The reviewed loopback-only amendment permits the recorded bounded live
+   checks; unresolved dependency alerts still prohibit hosting, tunnelling, or
+   public exposure.
 5. The local topology loses availability when the laptop sleeps or disconnects.
 
 Primary sources: organizer portal in PLAN; CopilotKit/Slack/Node/Cloud Run

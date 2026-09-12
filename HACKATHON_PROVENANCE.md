@@ -121,6 +121,23 @@ commit—not a timestamp and not the old tag alone—is the event boundary.
 | `d2b4a64` | security-review repairs: loopback Slack listener; inert `.env` parser; bounded exact-HTTPS Cloud Run reads; factual listener heartbeat; fail-closed coordinator outage state; workspace-bound Slack ingress, approval, and retained provenance | inherited Channels canonical application-user identity, Node HTTP/fetch primitives, SQLite schema migration |
 | `e4f6454` | invariant-review repairs: durable unresolved-operation reconciliation without repeat dispatch; effective Cloud Run revision evidence; expired-proposal release; duplicate-clock reset persistence; SQLite-exclusive ownership; ambient proposal tool and exact card-bound approval capability | inherited Channels agent/tool/component lifecycle, Node crypto and SQLite locking, Cloud Run REST read-back |
 | `ca2dc7c` | aligned the visibly synthetic intervention fixture with structured wrong-revision/routing evidence and rechecked the rendered Control Room state | event-built Control Room fixture and verification display |
+| `5873d84` | inert data-only `.env` parsing, secret-safe doctor output, and a canonical ignored environment example | Node file and string primitives; no shell evaluation of secret-bearing files |
+| `cd8e4ff` | pinned the economical model snapshot and configured the managed Channel code | inherited CopilotKit managed Channels credential contract |
+| `10556c9` | provisioned the dedicated always-free Cloud Run target and bound the Intelligence project | Google Cloud Run v2 REST API and a named personal gcloud configuration |
+| `0abf3b8` | drove the hold from the long-lived coordinator process and posted approvals as registered components so a listener restart re-renders an actionable card | inherited Channels durable registered-component API |
+| `a78ea06` | calibrated the clock-skew allowance against the measured live target rather than an assumed ideal clock | event-built observation window |
+| `39d07ea` | verified the bounded interpreter against the live model and recorded both findings, including one case pinned to the invariant rather than to an unstable output | OpenAI structured output with strict schemas |
+| `01b437b` | stopped the Control Room reporting a connected coordinator it could not reach | event-built snapshot loader |
+| `748bd2d` | gave the Control Room a scalable brand mark and an enterprise product shell, with tokens scoped so inherited styling does not drift | inherited CSS tokens preserved; native system typography |
+| `de1dbcb` | added the truthful local coordinator demo: real store, coordinator, and supervisor against one in-process synthetic target, with a repeatable reset | event-built domain and persistence; Node HTTP loopback |
+| `18da43d` | native typography stacks, layout-stable loading skeletons, response security headers, and the documented cookie-free posture | platform font stacks and Next.js response headers; no remote font or analytics |
+| `08b7a82` | required the coordinator's own clock to agree that the hold window elapsed, closing a target-controlled acceleration path, and distinguished a suspended machine from a slow target | event-built observation window and supervisor |
+| `01f9c9b` | stopped the Control Room asserting facts it cannot know: distinct coordinator-failure source, reasoned and timestamped connectivity, timestamp-spaced plot with named resets, and an honest no-sample state | event-built snapshot contract; native SVG, no charting dependency |
+| `ad6f8c7` | routed the live Slack path through the validated Intent primitive so the tested interpretation is the one the product runs | inherited Channels agent and tool lifecycle |
+
+Evidence-recording commits `c1b8dd0`, `19cf8af`, `bf83fbf`, `0c784c9`, `e7b5527`,
+`99468f5`, and `7cf76ef` changed status documents and current-tree check
+evidence only; they carry no product behavior.
 
 The event boundary is the `PREBUILD_COMMIT` recorded by the committed P0 phase
 transition. `scripts/scope-audit.sh` reports every path changed after it.

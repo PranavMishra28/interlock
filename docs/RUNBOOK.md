@@ -166,6 +166,33 @@ Run in this order; earlier success is not evidence for a later gate:
 Normal CI remains offline, secret-free, read-only, full-SHA pinned, and
 non-deploying. Existing starter tests do not prove Interlock behavior.
 
+## Offline synthetic rehearsal
+
+This rehearsal is available before Slack access and does not satisfy
+RELEASE-1 or DEMO-1. It uses the event-built SQLite store, coordinator, and
+supervisor with one in-process synthetic target. The seeded revision-bound hold
+starts unhealthy, so promotion remains refused, then receives a six-second
+healthy window and permits one continuation. Both the coordinator snapshot and
+Control Room identify the evidence as synthetic.
+
+Start from a known local demo state:
+
+```bash
+npm run demo --workspace web -- --reset
+```
+
+In another terminal, point the Control Room at that loopback coordinator:
+
+```bash
+INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web
+```
+
+Open `http://localhost:3100`. Re-running the first command with `--reset`
+removes only the local demo database and lock sidecars before reseeding it.
+Without `--reset`, the persisted demo state is reused. This is local synthetic
+workflow and restart/reset evidence only; it is not live Slack delivery or
+approval, live model behavior, or GCP/Cloud Run evidence.
+
 ## Demo reset and cleanup
 
 Preflight the authorized channel, configured owner, pending exact revision,
