@@ -38,6 +38,10 @@ export const fixtureStates: FixtureState[] = [
   "retired",
 ];
 
+export function healthChartY(value: number) {
+  return 136 - Math.min(2.2, Math.max(0, value)) / 2.2 * 112;
+}
+
 /**
  * Copy for the no-contract case. An unreachable coordinator must never be
  * reported as an absence of decisions: the page cannot tell the difference, and

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   emptyState,
   fixtureStates,
+  healthChartY,
   loadSnapshot,
   syntheticSnapshot,
 } from "./control-room";
@@ -16,6 +17,13 @@ test("synthetic Control Room state is explicit and fail-closed", () => {
   assert.equal(snapshot.workflow?.receipt, undefined);
   assert.equal(snapshot.samples.some(({ value }) => value > 1), true);
   assert.equal(snapshot.workflow?.observation?.resets.at(-1)?.reason, "unhealthy");
+});
+
+test("health chart places the real threshold and clamps out-of-range values", () => {
+  assert.equal(healthChartY(0), 136);
+  assert.equal(healthChartY(1), 136 - 112 / 2.2);
+  assert.equal(healthChartY(-1), 136);
+  assert.equal(healthChartY(99), 24);
 });
 
 test("required Control Room fixtures stay explicit and non-authoritative", () => {

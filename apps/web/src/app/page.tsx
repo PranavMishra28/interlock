@@ -1,6 +1,7 @@
 import {
   emptyState,
   fixtureStates,
+  healthChartY,
   loadSnapshot,
   type FixtureState,
 } from "@/lib/control-room";
@@ -50,20 +51,21 @@ export default async function Home({
   const workflow = snapshot.workflow;
   const points = snapshot.samples.map((sample, index) => {
     const x = snapshot.samples.length === 1 ? 320 : 24 + index * (592 / (snapshot.samples.length - 1));
-    const y = 136 - Math.min(2.2, sample.value) / 2.2 * 112;
-    return `${x},${y}`;
+    return `${x},${healthChartY(sample.value)}`;
   }).join(" ");
   const elapsed = workflow?.observation?.windowStartedAt
-    ? workflow.observation.observedAt - workflow.observation.windowStartedAt
+    ? Math.max(0, workflow.observation.observedAt - workflow.observation.windowStartedAt)
     : 0;
 
   return (
     <main className="cr-shell">
       <header className="cr-header">
         <div>
-          <p className="ck-eyebrow">Interlock · Control Room</p>
+          <p className="ck-eyebrow">Operational constraint · Checkout</p>
           <h1>Checkout release constraint</h1>
-          <p className="ck-intro">Evidence for one revision-bound operational decision.</p>
+          <p className="ck-intro">
+            One decision. One authority boundary. Independently verified.
+          </p>
         </div>
         <span className="cr-mode" data-source={snapshot.source}>
           {snapshot.source === "synthetic" ? "TEST INPUT — SYNTHETIC" : "Coordinator data"}
@@ -75,15 +77,20 @@ export default async function Home({
       {workflow ? (
         <>
           <section className="cr-summary" aria-labelledby="contract-title">
-            <div>
-              <p className="cr-label">Active contract</p>
+            <div className="cr-contract">
+              <div className="cr-contract-line">
+                <p className="cr-label">Active contract</p>
+                <span className="cr-state" data-status={workflow.status}>
+                  {workflow.status.replaceAll("_", " ")}
+                </span>
+              </div>
               <h2 id="contract-title">Hold {workflow.contract.candidateRevision} until checkout is healthy</h2>
               <p className="cr-source">Source: {workflow.contract.sourceMessageRef}</p>
             </div>
             <dl className="cr-facts">
               <div><dt>Resource</dt><dd>{workflow.contract.resourceId}</dd></div>
               <div><dt>Owner / approval</dt><dd>{workflow.contract.ownerId} · r{workflow.approval?.revision ?? "—"}</dd></div>
-              <div><dt>Current state</dt><dd><strong>{workflow.status.replaceAll("_", " ")}</strong></dd></div>
+              <div><dt>Policy</dt><dd>≤ {workflow.contract.threshold} for {workflow.contract.windowMs / 1_000}s</dd></div>
               <div><dt>Next</dt><dd>{next[workflow.status]}</dd></div>
               <div><dt>Coordinator</dt><dd className={snapshot.coordinator.connected ? "is-good" : "is-bad"}>{snapshot.coordinator.connected ? "Connected" : "Unavailable"}</dd></div>
               <div><dt>Slack listener</dt><dd className={snapshot.listener.connected ? "is-good" : "is-stale"}>{snapshot.listener.connected ? "Connected" : "Not connected"}</dd></div>
@@ -99,8 +106,14 @@ export default async function Home({
               <figure>
                 <svg className="cr-chart" viewBox="0 0 640 160" role="img" aria-labelledby="plot-title plot-desc">
                   <title id="plot-title">Checkout health observations</title>
-                  <desc id="plot-desc">Values must remain at or below {workflow.contract.threshold} for {workflow.contract.windowMs / 1_000} seconds. The first sample reset the window.</desc>
-                  <line x1="24" x2="616" y1="85" y2="85" className="cr-threshold" />
+                  <desc id="plot-desc">
+                    Values must remain at or below {workflow.contract.threshold} for {workflow.contract.windowMs / 1_000} seconds.
+                    {" "}{workflow.observation?.resets.length ?? 0} window resets are recorded.
+                  </desc>
+                  <line x1="24" x2="616" y1="24" y2="24" className="cr-gridline" />
+                  <line x1="24" x2="616" y1="80" y2="80" className="cr-gridline" />
+                  <line x1="24" x2="616" y1="136" y2="136" className="cr-gridline" />
+                  <line x1="24" x2="616" y1={healthChartY(workflow.contract.threshold)} y2={healthChartY(workflow.contract.threshold)} className="cr-threshold" />
                   <polyline points={points} className="cr-line" />
                   {snapshot.samples.map((sample, index) => {
                     const [x, y] = points.split(" ")[index]!.split(",");
@@ -108,7 +121,10 @@ export default async function Home({
                   })}
                 </svg>
                 <figcaption>
-                  Threshold ≤ {workflow.contract.threshold} · required window {workflow.contract.windowMs / 1_000}s · elapsed {Math.floor(elapsed / 1_000)}s · {workflow.observation?.resets.length ?? 0} reset(s)
+                  <span>Threshold ≤ {workflow.contract.threshold}</span>
+                  <span>Window {workflow.contract.windowMs / 1_000}s</span>
+                  <span>Elapsed {Math.floor(elapsed / 1_000)}s</span>
+                  <span>{workflow.observation?.resets.length ?? 0} reset(s)</span>
                 </figcaption>
               </figure>
               <p className="cr-muted">Last sample <time>{new Date(workflow.observation?.observedAt ?? snapshot.asOf).toLocaleTimeString("en-US", { timeZone: "UTC" })} UTC</time>. Monitoring gaps reset elapsed evidence.</p>
