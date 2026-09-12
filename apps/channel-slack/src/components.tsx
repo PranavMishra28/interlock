@@ -132,9 +132,9 @@ export function welcomeMessage(platform: string) {
       <Header>On-call assistant, in the thread</Header>
       <Section>
         <Markdown>
-          {"When something breaks, @-mention me. I read what has already been said in this " +
+          {"When something breaks, write it in this " +
             platform +
-            " thread first — you should never have to re-explain an outage to me."}
+            " channel. I read ordinary messages — you do not need to @-mention me."}
         </Markdown>
       </Section>
       <Fields>

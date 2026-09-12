@@ -389,16 +389,22 @@ before compaction.
   exact identity, so this pass verified the binding instead of duplicating the
   gate. Targeted re-checks: web typecheck clean and 44 web tests passed. No
   Cloud Run mutation, no Slack message, and no live-column change.
+- Socket Mode ambient path is implemented on `socket-mode-ambient` (not
+  yet on `main`). Managed CopilotKit Slack remains mention-only. Direct
+  listener uses `INTERLOCK_SLACK_APP_TOKEN` (`xapp-`) + bot token, maps
+  `message.channels` onto the existing Intent/coordinator/approval contract,
+  and posts the exact-revision card via `chat.postMessage`. Not LIVE_VERIFIED
+  until one real unmentioned #incidents message produces a workflow.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
   complete Slack-to-receipt flow. The existing bot may still need the one human
   `/invite @Interlock` action in the configured channel.
-- Exact next action: invite the existing bot if needed, then run the bounded
-  live top-level/reply/configured-owner approval flow and complete RELEASE-1.
-  Do not create a second Channel and do not represent the synthetic walkthrough
-  as live integration evidence. Video, social publication, and portal
-  submission remain human-only and unauthorized.
+- Exact next action: merge Socket Mode PR (`socket-mode-ambient`) after
+  `verify`, then `npm run demo` with `INTERLOCK_SLACK_APP_TOKEN` set and post
+  one unmentioned #incidents message. Do not @-mention the bot. Do not present
+  the managed adapter or the synthetic walkthrough as live Slack evidence.
+  Video, social publication, and portal submission remain human-only.
 
 ## Invariant summary
 
