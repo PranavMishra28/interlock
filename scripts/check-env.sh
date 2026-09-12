@@ -51,6 +51,36 @@ else
   done < .env
 fi
 
+configured() {
+  case "${1:-}" in ""|stub-replace-me) printf missing ;; *) printf configured ;; esac
+}
+
+if [ "${1:-}" = --doctor ]; then
+  openai="$(configured "${OPENAI_API_KEY:-}")"
+  if [ -n "${INTELLIGENCE_API_KEY:-}" ] && [ -n "${CHANNEL_CODE:-}" ]; then
+    copilotkit=configured
+  else
+    copilotkit=missing
+  fi
+  if [ -n "${INTERLOCK_SLACK_WORKSPACE_ID:-}" ] &&
+     [ -n "${INTERLOCK_SLACK_CHANNEL_ID:-}" ] &&
+     [ -n "${INTERLOCK_OWNER_ID:-}" ]; then
+    slack=configured
+  else
+    slack=missing
+  fi
+  gcp=missing
+  if [ -n "${GOOGLE_CLOUD_PROJECT:-}" ] &&
+     [ -f "${HOME}/.config/gcloud/application_default_credentials.json" ]; then
+    gcp=configured
+  fi
+  printf '%-22s %s\n' "OPENAI_API_KEY" "$openai"
+  printf '%-22s %s\n' "COPILOTKIT_*" "$copilotkit"
+  printf '%-22s %s\n' "SLACK_*" "$slack"
+  printf '%-22s %s\n' "GCP identity" "$gcp"
+  exit 0
+fi
+
 # Keep provider/model normalization aligned with agent-core/src/model.ts.
 trim() {
   local value="$1"

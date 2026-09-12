@@ -4,12 +4,25 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-[ -f .env ] && { set -a; . ./.env; set +a; }
+# shellcheck source=scripts/load-env.sh
+. "$ROOT/scripts/load-env.sh"
+load_interlock_env "$ROOT/.env"
+
+cleanup() {
+  local pid
+  for pid in $(jobs -p); do
+    kill "$pid" 2>/dev/null || true
+  done
+}
+trap cleanup EXIT INT TERM
+
+npm run coordinator --workspace web &
+npm run dev --workspace web &
 
 if [ -n "${CHANNEL_CODE:-}" ] && [ -n "${INTELLIGENCE_API_KEY:-}" ]; then
-  exec npm run dev --workspace channel-slack
+  npm run dev --workspace channel-slack
+else
+  printf '\033[2m  Slack is not configured. Control Room is on 127.0.0.1:3100.\n'
+  printf '  Fill INTELLIGENCE_API_KEY and CHANNEL_CODE for ambient Slack.\033[0m\n'
+  wait
 fi
-
-printf '\033[2m  Tier 1 is not configured, so starting the local surface instead.\n'
-printf '  To put the agent in Slack: npm run channel:setup\033[0m\n'
-exec npm run dev --workspace local-chat

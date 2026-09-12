@@ -17,6 +17,7 @@
   ],
   "scripts": {
     "check-env": "bash scripts/check-env.sh",
+    "doctor": "bash scripts/check-env.sh --doctor",
     "predev": "bash scripts/check-env.sh",
     "dev": "bash scripts/dev.sh",
     "dev:slack": "npm run dev --workspace channel-slack",

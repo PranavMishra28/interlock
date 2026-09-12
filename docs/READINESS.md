@@ -80,7 +80,7 @@ platform’s secret store. A package or placeholder is not authentication.
 | OpenAI model | inherited runtime / `@ai-sdk/openai` | bounded interpretation; optional evidence narration | `OPENAI_API_KEY`, `MODEL`, `MODEL_PROVIDER=openai` in ignored `.env` | personal account/project and separate API credits/budget | at P0 list models; confirm structured/tool behavior; one bounded call | **KEY_REQUIRED** |
 | CopilotKit web | inherited packages | base for the future evidence-only Control Room | inherited OpenAI names above only for starter chat | model key for inherited live chat | offline build/info route exercised; no Interlock round trip exists | **OFFLINE_READY** |
 | Slack primary | inherited `@copilotkit/channels` transport, behavior replaced after P0 | ambient conversation and exact-owner approval in one authorized incident channel | `INTELLIGENCE_API_KEY`, `CHANNEL_CODE`, `INTERLOCK_COORDINATOR_URL`, `INTERLOCK_COORDINATOR_TOKEN`, `INTERLOCK_SLACK_WORKSPACE_ID`, `INTERLOCK_SLACK_CHANNEL_ID`, `INTERLOCK_OWNER_ID` in ignored server config | personal workspace/app, generated manifest, channel install, required scopes/events/interactivity | brand-new unmentioned top-level message and unmentioned reply each arrive once; edits/thread provenance retained; stable actor; bot/duplicate suppressed; configured owner’s exact-revision button callback arrives once | **ACCESS_REQUIRED** (offline ingress/authority tests pass) |
-| Cloud Run target | direct Cloud Run v2 REST adapter; no new package | one prepared revision promotion and independent read-back | personal named gcloud config; ADC impersonating dedicated execution SA; `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_REGION`, `INTERLOCK_TARGET_SERVICE`, `INTERLOCK_TARGET_REVISION`, `INTERLOCK_TARGET_URL` in ignored `.env` | explicit budget; personal project/billing; APIs; target-scoped IAM; event-created target/revision | confirm active personal project without printing tokens; read service; denied non-allowlisted target; promote allowed revision; read routing and fresh health | **ACCESS_REQUIRED** (offline request/read-back contract tests pass) |
+| Cloud Run target | direct Cloud Run v2 REST adapter; no new package | one prepared revision promotion and independent read-back | personal named gcloud config; ADC impersonating dedicated execution SA; `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_REGION`, `INTERLOCK_TARGET_SERVICE`, `INTERLOCK_TARGET_REVISION`, `INTERLOCK_TARGET_URL` in ignored `.env` | dedicated personal project with billing attached; stay inside always-free quotas | confirm active personal project without printing tokens; read service; denied non-allowlisted target; promote allowed revision; read routing and fresh health | **ACCESS_REQUIRED** (budget recorded; project still missing) |
 | Local fallback target | existing local runtime chosen at P0 | honest fallback if cloud access fails | local target URL in ignored `.env` | genuinely running local process | dispatch, read-back, restart/reset; UI labels “local” | **OFFLINE_READY** (not built) |
 | Trigger.dev / Firestore / executor fleet / Auth0 | not installed | future hosted topology | none for MVP | separate reviewed design | none | **DEFERRED** |
 
@@ -97,12 +97,28 @@ deduplicate stable event/delivery/proposal IDs, preserve reply/edit provenance,
 and validate an explicit button against actor and exact proposal revision. The
 inherited mention subscription and demo button are not acceptance evidence.
 
-Cloud owner action at P0: create/select a dedicated personal project only after
-budget approval; isolate it in a named gcloud configuration; create the target
-and prepared revision during the event; use a dedicated execution identity via
-ADC impersonation rather than a key; scope update/read permission to the target;
-record teardown. Never use employer gcloud/ADC or expose an unauthenticated
-endpoint.
+Cloud owner action at P0: **budget recorded 2026-09-12 as $0 / always-free**.
+Do not enable paid SKUs, CUDs, GPUs, min-instances, or non-free regions.
+Google still requires a billing account on the project even when usage stays
+inside Always Free; set a $0 budget alert. Create/select a dedicated personal
+project the Gmail identity can describe; isolate it in a named gcloud
+configuration; deploy one tiny checkout service in `us-central1` with
+request-based billing and `min-instances=0`; keep Artifact Registry under
+0.5 GiB and Cloud Build on the default e2-standard-2 free minutes; create the
+event candidate revision; impersonate a dedicated execution SA via ADC rather
+than a key; scope update/read to that service; record teardown. Never use
+employer gcloud/ADC, never point Interlock at `prod-457713`, and never expose
+an unauthenticated endpoint.
+
+Recorded Cloud Run Always Free envelope (per billing account, monthly,
+[Cloud Run pricing](https://cloud.google.com/run/pricing) request-based /
+[Free Program](https://docs.cloud.google.com/free/docs/free-cloud-features)):
+2 million requests, 180,000 vCPU-seconds, 360,000 GiB-seconds, 1 GiB North
+America egress. Demo envelope: 1 vCPU, 128–256 MiB, scale to zero, health
+and promotion traffic only. Artifact Registry 0.5 GiB and Cloud Build 2,500
+e2-standard-2 minutes are separate Always Free SKUs and must stay inside
+those caps. If a billable overage would be required, stop instead of
+upgrading.
 
 ## Dependency security gate
 
@@ -136,9 +152,9 @@ the local deterministic slice stays offline.
 
 Two inherited security boundaries also block deployment as-is:
 
-- `scripts/check-env.sh` sources `.env` as shell code. Use only a
-  maintainer-created file during offline preparation; in BUILD_ACTIVE replace
-  this with strict `KEY=VALUE` parsing before adding real credentials.
+- `scripts/check-env.sh` parses `.env` as inert `KEY=VALUE` data. `npm run
+  doctor` reports configured/missing for OpenAI, CopilotKit, Slack, and GCP
+  identity and never prints values.
 - the inherited CopilotKit, realtime-token, and search routes have no Interlock
   operator session. BUILD_ACTIVE disables those routes, redirects the inherited
   voice page, and pins web/coordinator listeners to loopback. Do not re-enable

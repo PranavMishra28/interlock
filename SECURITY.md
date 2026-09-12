@@ -13,8 +13,8 @@ credential or authorization problem.
 
 - Credentials live only in the ignored root `.env` (or a deployment
   platform's secret store). `.env.example` holds names and placeholders, never
-  values. `scripts/check-env.sh` sources `.env` as shell, so treat that file as
-  executable configuration.
+  values. `scripts/check-env.sh` and `scripts/dev.sh` parse `.env` as inert
+  `KEY=VALUE` data and never execute it.
 - Never commit `*.pem`, `*.key`, service-account JSON, model transcripts,
   private screenshots, or callback/capability URLs (for example Trigger.dev
   waitpoint `token.url` / `publicAccessToken`).

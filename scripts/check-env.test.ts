@@ -11,6 +11,7 @@ function preflight(config: string, args: string[] = [] as const) {
     mkdirSync(join(root, "scripts"));
     mkdirSync(join(root, "node_modules/@copilotkit/channels"), { recursive: true });
     copyFileSync(new URL("./check-env.sh", import.meta.url), join(root, "scripts/check-env.sh"));
+    copyFileSync(new URL("./load-env.sh", import.meta.url), join(root, "scripts/load-env.sh"));
     writeFileSync(join(root, ".env"), config);
     return spawnSync("bash", [join(root, "scripts/check-env.sh"), ...args], {
       encoding: "utf8", env: { PATH: process.env.PATH },
@@ -49,6 +50,19 @@ test("voice separately requires an OpenAI credential", () => {
   const result = preflight("OPENROUTER_API_KEY=sk-or-test", ["--voice"]);
   assert.equal(result.status, 1);
   assert.match(result.stdout, /OPENAI_API_KEY.*voice/);
+});
+
+test("doctor reports configured/missing without values", () => {
+  const result = preflight(
+    "OPENAI_API_KEY=sk-secret-must-not-print\nINTELLIGENCE_API_KEY=\nCHANNEL_CODE=\nGOOGLE_CLOUD_PROJECT=\n",
+    ["--doctor"],
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /OPENAI_API_KEY\s+configured/);
+  assert.match(result.stdout, /COPILOTKIT_\*\s+missing/);
+  assert.match(result.stdout, /SLACK_\*\s+missing/);
+  assert.match(result.stdout, /GCP identity\s+missing/);
+  assert.doesNotMatch(result.stdout, /sk-secret-must-not-print/);
 });
 
 test(".env values are parsed as data, not shell code", () => {

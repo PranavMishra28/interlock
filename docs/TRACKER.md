@@ -13,12 +13,13 @@ before compaction.
 - Inspected base: clean `main` at
   `88b6309b071978fb2ec585b683392a11d5283358` (PR #6 merge).
 - Working branch: `build-active`.
-- Last checkpoint: 2026-09-12 eligible offline gate completion audit.
+- Last checkpoint: 2026-09-12 GCP Always Free budget recorded; live coordinator
+  loop and Slack restart-safe approval still unimplemented.
 - Authorization evidence: the maintainer confirmed the official build opening
   and authorized BUILD_ACTIVE in this session. Scope is the PLAN MVP and
-  personal accounts only. No external spend or provisioning limit is recorded,
-  so paid calls, app installation, IAM, billing, and cloud creation remain
-  blocked while offline product work proceeds.
+  personal accounts only. GCP spend is recorded as **$0 Always Free** (see
+  READINESS). OpenAI API credits/budget are still unrecorded. Slack install and
+  a dedicated personal GCP project remain ACCESS_REQUIRED.
 - Dirty ownership: lead owns TRACKER/integration; no second writer is active.
 - Last verified: `bash scripts/check.sh` passed on the current working tree:
   inherited typecheck/tests/MCP stdio, web build, phase guard negatives, hook
@@ -78,11 +79,14 @@ before compaction.
   synthetic label. The subsequent full `bash scripts/check.sh` passed on that
   clean checkpoint. CORE-1, COORD-1, UI-1, and REL-1 are complete; no eligible
   offline work remains before the capability-gated live nodes.
-- Blockers: personal Slack, OpenAI, and GCP capabilities and spending limits
-  are not live-verified; inherited dependency exposure blocks public/live use.
-- Exact next action: retain the live stop until personal access and spending
-  limits are recorded and the inherited dependency gate is cleared; then run
-  the bounded live checks before RELEASE-1 or DEMO-1.
+- Blockers: dedicated personal GCP project still missing (`prod-457713` is
+  not usable). Slack channel install missing. OpenAI budget unrecorded.
+  Coordinator process does not yet observe/enforce/continue. Approval cards
+  do not survive listener restart. Inherited dependency exposure still blocks
+  public hosting.
+- Exact next action: keep wiring the coordinator observer/promote loop and
+  restart-safe Slack approvals offline; wait for a dedicated personal
+  `us-central1` project the Gmail identity can describe.
 
 ## Invariant summary
 
@@ -102,7 +106,7 @@ normative wording.
 | CAP-HARNESS | Project hooks and resume path | OFFLINE_READY | hook fixtures pass; current IDE shell hook observed; fresh-session context check pending |
 | CAP-SLACK | Personal Slack workspace/app and ambient channel delivery | ACCESS_REQUIRED | owner installs after P0; new unmentioned top-level + reply test |
 | CAP-MODEL | Personal OpenAI project/key and agreed API budget | KEY_REQUIRED | one bounded post-P0 behavior/cost check |
-| CAP-GCP | Dedicated personal GCP project, budget, target and execution identity | ACCESS_REQUIRED | post-P0 least-privilege read/promote/read-back |
+| CAP-GCP | Dedicated personal GCP project, budget, target and execution identity | ACCESS_REQUIRED | $0 Always Free recorded; dedicated project + named config still required |
 
 Statuses: `OFFLINE_READY`, `KEY_REQUIRED`, `ACCESS_REQUIRED`,
 `LIVE_VERIFIED`, `DEFERRED`.
