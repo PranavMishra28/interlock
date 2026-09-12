@@ -1,8 +1,8 @@
 # Control Room design brief
 
-Status: prose-only PREP_ONLY requirement. Slack is the conversation and
-exact-revision approval surface. The Next.js Control Room is evidence; it is
-not a Slack imitation, a chat panel, or a source of operator authority.
+Status: BUILD_ACTIVE requirement. Slack is the conversation and exact-revision
+approval surface. The Next.js Control Room is evidence; it is not a Slack
+imitation, a chat panel, or a source of operator authority.
 
 ## Decision
 
@@ -56,6 +56,11 @@ Recharts and a small useful icon set are the maximum optional additions; first
 try native SVG/CSS and existing packages. Do not migrate to Tailwind, add a graph
 editor, or draw a decorative network map.
 
+- Brand: the supplied near-touching-hands reference is distilled into one
+  native SVG mark: opposing ivory forms, a controlled gap, and one restrained
+  blue signal on graphite. Use it in the persistent product bar and application
+  icon, not as repeated card decoration. The Control Room's premium visual
+  tokens are scoped to its app frame so inherited starter surfaces do not drift.
 - Typography: one clear page title, compact labels, tabular/monospace timestamps
   and operation IDs, and body text readable at screen-recording scale.
 - Color: neutral surfaces; semantic color only for held, observing, verified,

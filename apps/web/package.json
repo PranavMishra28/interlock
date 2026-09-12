@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next dev --turbopack -p 3100",
+    "dev": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --turbopack -p 3100",
+    "coordinator": "node --env-file-if-exists=../../.env --import tsx src/server/coordinator.ts",
+    "demo": "node --env-file-if-exists=../../.env --import tsx src/server/demo.ts",
     "build": "next build",
-    "start": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next start -p 3100",
+    "start": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next start --hostname 127.0.0.1 -p 3100",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/lib/incidents.test.ts src/components/streamed-cards.test.ts"
+    "test": "node --import tsx --test src/lib/*.test.ts src/components/streamed-cards.test.ts src/server/*.test.ts"
   },
   "dependencies": {
     "@copilotkit/react-core": "1.70.1",

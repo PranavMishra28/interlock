@@ -1,7 +1,7 @@
 # Security
 
-Pre-build status: this repository contains inherited starter scaffolding and
-planning documents only. There is no deployed Interlock service yet.
+Build status: Interlock is a loopback-only local application. The dependency
+gate in `docs/READINESS.md` still blocks public hosting.
 
 ## Reporting
 
@@ -13,8 +13,8 @@ credential or authorization problem.
 
 - Credentials live only in the ignored root `.env` (or a deployment
   platform's secret store). `.env.example` holds names and placeholders, never
-  values. `scripts/check-env.sh` sources `.env` as shell, so treat that file as
-  executable configuration.
+  values. `scripts/check-env.sh` and `scripts/dev.sh` parse `.env` as inert
+  `KEY=VALUE` data and never execute it.
 - Never commit `*.pem`, `*.key`, service-account JSON, model transcripts,
   private screenshots, or callback/capability URLs (for example Trigger.dev
   waitpoint `token.url` / `publicAccessToken`).
@@ -40,3 +40,28 @@ The planned local coordinator accepts only loopback traffic and has one
 database owner. This does not constrain independent cloud administrators or an
 operation already dispatched. Do not expose the inherited starter to live
 traffic until the dependency gate in `docs/READINESS.md` is cleared.
+
+## Control Room privacy and browser posture
+
+- The current Control Room sets no cookies and uses no `localStorage`,
+  `sessionStorage`, IndexedDB, analytics, or browser telemetry. Do not add a
+  cookie banner while that remains true. If browser persistence or the planned
+  operator session is implemented, document its purpose, lifetime, and
+  SameSite/HttpOnly/Secure posture before enabling it.
+- Fonts use the native system UI and monospace stacks. The browser loads the
+  application icon and other assets from the same origin; it makes no remote
+  font or image request. The active Control Room does not initialize the
+  inherited CopilotKit browser runtime. `.copilotkit/project.json` retains a
+  project telemetry binding for CopilotKit tooling, not application analytics.
+- Rendered HTML contains operational evidence: resource and revision IDs,
+  configured owner ID, source message reference, health observations, and an
+  operation ID. These are not credentials, but they are sensitive operational
+  metadata; use the Control Room only on the intended local machine and avoid
+  sharing unredacted screenshots.
+- Next applies CSP, `Referrer-Policy: no-referrer`, a deny-by-default
+  Permissions Policy for camera/geolocation/microphone/payment/USB,
+  `X-Content-Type-Options: nosniff`, and both CSP `frame-ancestors 'none'` and
+  `X-Frame-Options: DENY`. CSP permits same-origin routes/assets and Next's
+  inline bootstrap; development alone also permits eval and loopback WebSocket
+  connections for hot reload. These defense-in-depth headers do not add user
+  authentication or make public hosting safe.

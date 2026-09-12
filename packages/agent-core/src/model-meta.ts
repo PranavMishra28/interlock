@@ -1,15 +1,10 @@
-export const DEFAULT_MODEL = "gpt-5.6-sol";
+export const DEFAULT_MODEL = "gpt-5.4-mini-2026-03-17";
 
 /**
- * Alternates, documented so you don't have to go digging mid-build.
- *
- * Note on cost: the default is a flagship model. If you are running on hackathon
- * credits and burning through them, `gpt-5.6-luna` is ~25x cheaper per token and
- * is genuinely fine for chat-shaped work.
+ * Verified against the personal OpenAI project's model list on 2026-09-12.
+ * The dated snapshot keeps live-eval behavior reproducible.
  */
 export const MODEL_NOTES = {
-  "gpt-5.6-sol": "default · flagship · $5.00/$30.00 per MTok",
-  "gpt-6-astra": "most capable · built for the hardest end-to-end work",
-  "gpt-5.6-terra": "balances capability with cost",
-  "gpt-5.6-luna": "cheapest · $0.20/$1.20 per MTok · the one to switch to if credits run low",
+  "gpt-5.4-mini-2026-03-17":
+    "default · economical · $0.75 input / $4.50 output per MTok",
 } as const;

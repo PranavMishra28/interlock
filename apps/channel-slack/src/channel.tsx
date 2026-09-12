@@ -1,16 +1,40 @@
 import { createChannel } from "@copilotkit/channels";
-import { makeAgent, isSearchConfigured, isWorkplaceConfigured, WORKPLACE_CONTEXT } from "agent-core";
+import type { ChannelHandler } from "@copilotkit/channels";
+import { BuiltInAgent } from "@copilotkit/runtime/v2";
+import { resolveModel } from "agent-core";
+import {
+  boundedIntentInput,
+  type IntentInput,
+} from "agent-core/interlock-intent";
 import { required } from "./env";
-import { IncidentCard, Timeline, welcomeMessage } from "./components";
-import { proposeAction, readThread, searchTheWeb } from "./tools";
+import { welcomeMessage } from "./components";
+import { interlockApproval, interlockProposal } from "./approval";
+import { deliverAmbientMessage } from "./interlock";
 
-// Tools are registered only when their credential is present, so the agent is
-// never handed a tool that will fail when it calls it.
-const tools = [
-  readThread,
-  proposeAction,
-  ...(isSearchConfigured() ? [searchTheWeb] : []),
-];
+const ambientConfig = {
+  allowedWorkspaceId: required("INTERLOCK_SLACK_WORKSPACE_ID"),
+  allowedChannelId: required("INTERLOCK_SLACK_CHANNEL_ID"),
+  resourceId: required("INTERLOCK_RESOURCE_ID"),
+  targetUrl: required("INTERLOCK_TARGET_URL"),
+  candidateRevision: required("INTERLOCK_TARGET_REVISION"),
+  ownerId: required("INTERLOCK_OWNER_ID"),
+  coordinatorUrl: required("INTERLOCK_COORDINATOR_URL"),
+  token: required("INTERLOCK_COORDINATOR_TOKEN"),
+};
+const approval = interlockApproval(ambientConfig);
+const proposal = interlockProposal(ambientConfig);
+
+function makeInterlockAgent(threadId: string) {
+  const agent = new BuiltInAgent({
+    model: resolveModel(),
+    prompt:
+      "Call resolve_interlock_intent exactly once with the requested Intent output. Emit no other text.",
+    maxSteps: 3,
+    toolChoice: "required",
+  });
+  agent.threadId = threadId;
+  return agent;
+}
 
 export const channel = createChannel({
   // Must equal the Channel Code in Intelligence, character for character. A
@@ -23,47 +47,53 @@ export const channel = createChannel({
   // web requests and must be absent on a Channels-only runtime.
   identifyUser: "platform",
 
-  agent: makeAgent,
-  tools,
-  components: [IncidentCard, Timeline],
+  agent: makeInterlockAgent,
+  tools: [proposal],
+  components: [approval],
+  store: { concurrency: "serial", dedupTtl: 300_000 },
+});
 
-  // Injected into the agent's prompt on every run.
-  context: [
-    
-    {
-      description: "Rendering",
-      value:
-        "You can draw native UI by calling incident_card or timeline. Prefer them over prose whenever the answer has structure.",
+type AmbientConfig = typeof ambientConfig;
+
+export async function routeAmbientMessage(
+  { thread, message }: Parameters<ChannelHandler>[0],
+  config: AmbientConfig,
+  ingress = deliverAmbientMessage,
+) {
+  const source = await ingress(
+    message,
+    thread.conversationKey,
+    config,
+  );
+  if (!source) return;
+  const intent: IntentInput = {
+    messages: [{
+      deliveryId: source.deliveryId,
+      messageRef: `${source.channelId}:${source.logicalMessageId}`,
+      actorId: source.actorId,
+      text: source.text,
+    }],
+    resource: {
+      resourceId: config.resourceId,
+      targetUrl: config.targetUrl,
+      candidateRevision: config.candidateRevision,
+      ownerId: config.ownerId,
     },
-    ...(isWorkplaceConfigured()
-      ? [{ description: "Workplace", value: WORKPLACE_CONTEXT }]
-      : []),
-    {
-      description: "Surface",
-      value:
-        "This is a chat thread in a channel people are actively working in. Assume others are reading and that some joined late.",
-    },
-  ],
+  };
+  await thread.setState({
+    interlockThreadRef: source.threadRef,
+    interlockIntent: intent,
+  });
+  await thread.runAgent({ prompt: boundedIntentInput(intent) });
+}
 
-  // Managed Slack hides tool-call progress by default. Turning it on is worth it
-  // in a demo — the audience watches the agent search and think.
-  showToolStatus: true,
-});
+const deliver: ChannelHandler = (context) =>
+  routeAmbientMessage(context, ambientConfig);
 
-// A mention subscribes the conversation, so the agent then follows along instead
-// of needing to be @-mentioned every single turn.
-channel.onMention(async ({ thread }) => {
-  await thread.subscribe();
-  await thread.runAgent();
-});
-
-// Non-mentioned turns only ever reach onMessage — gate them on the flag or the
-// agent will answer every message in every channel it has been invited to.
-channel.onMessage(async ({ thread }) => {
-  if (await thread.isSubscribed()) {
-    await thread.runAgent();
-  }
-});
+// A mention has no special authority or activation semantics. Both hooks feed
+// the same bounded, deduplicated coordinator ingress.
+channel.onMention(deliver);
+channel.onMessage(deliver);
 
 channel.onWelcome(async ({ thread, platform }) => {
   await thread.post(welcomeMessage(platform));

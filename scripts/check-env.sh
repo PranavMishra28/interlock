@@ -27,7 +27,72 @@ fi
 if [ ! -f .env ]; then
   fail ".env is missing. Run: cp .env.example .env   then choose MODEL_PROVIDER and fill in its API key."
 else
-  set -a; . ./.env; set +a
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    case "$line" in ""|\#*) continue ;; esac
+    if [[ ! "$line" =~ ^[A-Z_][A-Z0-9_]*= ]]; then
+      fail ".env contains an invalid line; use strict KEY=VALUE entries only."
+      continue
+    fi
+    key="${line%%=*}"
+    value="${line#*=}"
+    case "$key" in
+      PATH|BASH_ENV|ENV|SHELLOPTS|NODE_OPTIONS|LD_*|DYLD_*|NPM_CONFIG_*)
+        fail ".env may not set process-control variable $key."
+        continue
+        ;;
+    esac
+    case "$value" in
+      \"*\") value="${value:1:${#value}-2}" ;;
+      \'*\') value="${value:1:${#value}-2}" ;;
+    esac
+    printf -v "$key" '%s' "$value"
+    export "$key"
+  done < .env
+fi
+
+configured() {
+  case "${1:-}" in ""|stub-replace-me) printf missing ;; *) printf configured ;; esac
+}
+
+if [ "${1:-}" = --doctor ]; then
+  openai="$(configured "${OPENAI_API_KEY:-}")"
+  if [ -n "${INTELLIGENCE_API_KEY:-}" ] && [ -n "${CHANNEL_CODE:-}" ]; then
+    copilotkit=configured
+  else
+    copilotkit=missing
+  fi
+  if [ -n "${INTERLOCK_SLACK_WORKSPACE_ID:-}" ] &&
+     [ -n "${INTERLOCK_SLACK_CHANNEL_ID:-}" ] &&
+     [ -n "${INTERLOCK_OWNER_ID:-}" ]; then
+    slack=configured
+  else
+    slack=missing
+  fi
+  # Reported apart from the platform IDs on purpose. These two are what the
+  # CLI attaches to the managed Channel, and without them Slack stays absent
+  # in Intelligence however complete the rest of the file looks. Collapsing
+  # them into one "SLACK_* configured" line reads as ready when ingress
+  # cannot start at all.
+  if [ -n "${INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_BOT_TOKEN:-}" ] &&
+     [ -n "${INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_SIGNING_SECRET:-}" ]; then
+    slack_credentials=configured
+  else
+    slack_credentials=missing
+  fi
+  gcp=missing
+  if [ -n "${GOOGLE_CLOUD_PROJECT:-}" ] &&
+     [ -f "${HOME}/.config/gcloud/application_default_credentials.json" ]; then
+    gcp=configured
+  fi
+  printf '%-22s %s\n' "OPENAI_API_KEY" "$openai"
+  printf '%-22s %s\n' "COPILOTKIT_*" "$copilotkit"
+  printf '%-22s %s\n' "SLACK_* identities" "$slack"
+  printf '%-22s %s\n' "SLACK attach creds" "$slack_credentials"
+  printf '%-22s %s\n' "GCP identity" "$gcp"
+  [ "$slack_credentials" = configured ] ||
+    printf '\nSlack attach credentials are absent, so the managed Channel cannot\nbind and no message can enter ingress. Confirm with: npm run channel:status\n'
+  exit 0
 fi
 
 # Keep provider/model normalization aligned with agent-core/src/model.ts.
@@ -46,7 +111,7 @@ canonical_provider() {
 
 # ── tier 0 ───────────────────────────────────────────────────────────────────
 if [ -f .env ]; then
-  model="$(trim "${MODEL:-gpt-5.6-sol}")"
+  model="$(trim "${MODEL:-gpt-5.4-mini-2026-03-17}")"
   model_id="$model"
   model_provider=""
   case "$model" in
@@ -88,7 +153,7 @@ if [ -f .env ]; then
       ""|stub-replace-me) fail "OPENAI_API_KEY is required separately for OpenAI Realtime voice, even when chat uses $provider." ;;
     esac
   fi
-  [ -z "${MODEL:-}" ] && warn "MODEL is unset; falling back to gpt-5.6-sol."
+  [ -z "${MODEL:-}" ] && warn "MODEL is unset; falling back to gpt-5.4-mini-2026-03-17."
 
   # ── tier 1: all-or-nothing. Half-configured Channels is the worst state. ──
   if [ -n "${INTELLIGENCE_API_KEY:-}" ] || [ -n "${CHANNEL_CODE:-}" ]; then

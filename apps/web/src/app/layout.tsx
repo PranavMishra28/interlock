@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
-import { Providers } from "@/components/providers";
-import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Incident assistant — Agents, Everywhere",
-  description: "Pick an incident, ask your assistant, and add a follow-up.",
+  title: {
+    default: "Interlock Control Room",
+    template: "%s · Interlock",
+  },
+  description:
+    "A revision-bound operational control plane for authority, enforcement, and evidence.",
+  applicationName: "Interlock",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Interlock",
+  },
 };
 
 export default function RootLayout({
@@ -15,14 +23,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body>
-        <Providers>{children}</Providers>
+        <div className="app-frame">
+          <header className="app-bar">
+            <a className="app-brand" href="/" aria-label="Interlock Control Room">
+              <img src="/icon.svg" alt="" width="36" height="36" />
+              <span>
+                <strong>Interlock</strong>
+                <small>Control plane</small>
+              </span>
+            </a>
+            <span className="app-environment">
+              <i aria-hidden="true" />
+              Loopback boundary
+            </span>
+          </header>
+          {children}
+        </div>
       </body>
     </html>
   );

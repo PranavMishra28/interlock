@@ -3,17 +3,11 @@
 ## Phase
 
 Read `.hackathon-phase` and `docs/TRACKER.md` before acting. Current phase is
-**PREP_ONLY**: Interlock is not implemented. A clock or environment variable
-cannot unlock work. BUILD_ACTIVE requires the official opening, explicit
-maintainer authorization, a recorded final pre-build commit, and a committed
-phase transition that passes `scripts/scope-audit.sh`.
-
-During PREP_ONLY, only repository administration, provenance, reviewed generic
-tooling, inherited-starter verification, and prose planning are allowed. No
-runtime prompts, executable domain schemas/policies/state machines, classifiers,
-approval/enforcement/observation/action logic, product UI, product fixtures or
-tests, or deployment behavior—also not in Markdown, ignored files, branches,
-stashes, patches, or another repo.
+**BUILD_ACTIVE**. The official opening, explicit maintainer authorization, and
+final clean PREP_ONLY boundary are recorded in the committed phase transition.
+Implement only eligible TRACKER nodes within PLAN, READINESS, account, and
+spending limits. Missing external access blocks only its dependent live column;
+it never authorizes a fallback to masquerade as live evidence.
 
 ## Canonical documents
 

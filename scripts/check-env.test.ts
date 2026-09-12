@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -11,6 +11,7 @@ function preflight(config: string, args: string[] = [] as const) {
     mkdirSync(join(root, "scripts"));
     mkdirSync(join(root, "node_modules/@copilotkit/channels"), { recursive: true });
     copyFileSync(new URL("./check-env.sh", import.meta.url), join(root, "scripts/check-env.sh"));
+    copyFileSync(new URL("./load-env.sh", import.meta.url), join(root, "scripts/load-env.sh"));
     writeFileSync(join(root, ".env"), config);
     return spawnSync("bash", [join(root, "scripts/check-env.sh"), ...args], {
       encoding: "utf8", env: { PATH: process.env.PATH },
@@ -49,6 +50,57 @@ test("voice separately requires an OpenAI credential", () => {
   const result = preflight("OPENROUTER_API_KEY=sk-or-test", ["--voice"]);
   assert.equal(result.status, 1);
   assert.match(result.stdout, /OPENAI_API_KEY.*voice/);
+});
+
+test("doctor reports configured/missing without values", () => {
+  const result = preflight(
+    "OPENAI_API_KEY=sk-secret-must-not-print\nINTELLIGENCE_API_KEY=\nCHANNEL_CODE=\nGOOGLE_CLOUD_PROJECT=\n",
+    ["--doctor"],
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /OPENAI_API_KEY\s+configured/);
+  assert.match(result.stdout, /COPILOTKIT_\*\s+missing/);
+  assert.match(result.stdout, /SLACK_\* identities\s+missing/);
+  assert.match(result.stdout, /SLACK attach creds\s+missing/);
+  assert.match(result.stdout, /GCP identity\s+missing/);
+  assert.doesNotMatch(result.stdout, /sk-secret-must-not-print/);
+});
+
+test("doctor separates Slack identities from the attach credentials", () => {
+  // Platform IDs alone once read as a ready Slack column while the managed
+  // Channel had no adapter bound at all, so the two must never collapse.
+  const result = preflight(
+    [
+      "INTERLOCK_SLACK_WORKSPACE_ID=T000",
+      "INTERLOCK_SLACK_CHANNEL_ID=C000",
+      "INTERLOCK_OWNER_ID=U000",
+      "",
+    ].join("\n"),
+    ["--doctor"],
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /SLACK_\* identities\s+configured/);
+  assert.match(result.stdout, /SLACK attach creds\s+missing/);
+  assert.match(result.stdout, /managed Channel cannot\nbind/);
+});
+
+test(".env values are parsed as data, not shell code", () => {
+  const root = mkdtempSync(join(tmpdir(), "agents-env-injection-"));
+  try {
+    const marker = join(root, "executed");
+    const result = preflight(`OPENAI_API_KEY=$(touch ${marker})`);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.equal(existsSync(marker), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects malformed and process-control .env entries", () => {
+  const result = preflight("OPENAI_API_KEY=sk-test\nNODE_OPTIONS=--import=payload\nnot shell");
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /may not set process-control variable NODE_OPTIONS/);
+  assert.match(result.stdout, /strict KEY=VALUE/);
 });
 
 function modelConfig(config: NodeJS.ProcessEnv) {

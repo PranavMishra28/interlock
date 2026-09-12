@@ -1,8 +1,7 @@
 # Interlock plan (prose only)
 
-Status: PREP_ONLY. This is a specification, not implemented functionality.
-Executable prompts, schemas, policies, state transitions, adapters, product UI,
-fixtures, and deployment behavior are build-period work.
+Status: BUILD_ACTIVE. This specification is normative; implementation and
+evidence status live in TRACKER and provenance.
 
 ## 1. Product and bounded competition scope
 
