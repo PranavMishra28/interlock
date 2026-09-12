@@ -139,6 +139,23 @@ before compaction.
   - A prior clean run closed a 14.9s window with 0 resets. The fault switch
     refuses an unauthenticated caller with 403. The target was reset to
     `checkout-v41` afterwards, so the demonstration is repeatable.
+- MODEL-1 live evidence 2026-09-12 via `packages/agent-core/src/live-eval.ts`
+  against `gpt-5.4-mini-2026-03-17`: 9/9 on three consecutive runs at roughly
+  $0.005 per run. The set covers an explicit current decision, hypothetical,
+  negation, missing parameters, unknown resource, unsupported condition family,
+  prompt injection, a forged owner approval, and a real decision buried in
+  ordinary incident chatter, which guards against a model that abstains from
+  everything and is therefore useless.
+  - Two findings were recorded rather than smoothed over. The forged-approval
+    case is genuinely unstable between runs, so it asserts the guarantee that
+    actually holds: the output shape cannot express approval and any proposal
+    stays bound to the trusted resource, because authority belongs to the
+    coordinator and the owner's server-signed card. Separately, without
+    OpenAI strict structured output the model intermittently returned an object
+    with no `kind`; that failed safe, producing no proposal, and strict mode
+    with a pruned nullable union removed it.
+- Cumulative OpenAI spend this event is approximately $0.03 against the $100
+  cap: a free model-list read plus six eval runs.
 - Live GCP evidence: dedicated personal project `interlock-508417` provisioned
   in `us-central1` inside the $0 Always Free envelope, isolated in the named
   gcloud configuration `interlock`. `checkout-v41` serves 100%; candidate
@@ -195,7 +212,7 @@ may be useful but cannot make the original criterion green.
 | UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `ca2dc7c:c556474499785fda6be83ac2a1d01f2d6d469a74` | DONE_IMPL | NOT_REQUIRED |
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
 | SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `a78ea06` | DONE_IMPL (restart-safe registered approval) | ACCESS_REQUIRED |
-| MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | BLOCKED_DEPS |
+| MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `0c784c9` | DONE_IMPL | LIVE_VERIFIED |
 | CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `a78ea06` | DONE_IMPL | LIVE_VERIFIED |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
