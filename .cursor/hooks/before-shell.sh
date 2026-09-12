@@ -9,7 +9,7 @@ reason=
 # wrappers so one obvious spelling change does not slip past the patterns.
 normalized=$(printf '%s' "$command" |
   sed -E 's@(^|[;&|[:space:]])/[^[:space:]]*/([a-z0-9_.-]+)@\1\2@g' |
-  sed -E 's@(^|[;&|[:space:]])git([[:space:]]+-c[[:space:]]+[^[:space:]]+)+@\1git@g')
+  sed -E 's@(^|[;&|[:space:]])git([[:space:]]+(-c|-C|--git-dir|--work-tree)([[:space:]]+|=)[^[:space:]]+)+@\1git@g')
 
 if [[ "$normalized" =~ git[[:space:]]+push.*(--force|-f([[:space:]]|$)|[[:space:]]\+) ]] ||
    [[ "$normalized" =~ git[[:space:]]+reset.*--hard ]] ||

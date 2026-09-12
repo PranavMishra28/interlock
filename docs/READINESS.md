@@ -55,7 +55,10 @@ not a sandbox and cannot restart a process. Supported manual recovery is IDE
 chat reopen or `cursor-agent --resume/--continue`; the installed CLI is not
 authenticated, and no login was performed. Hook decisions are appended to
 `$(git rev-parse --git-dir)/interlock-hook-events`, which stays out of Git and
-records the decision only, never command text.
+records the decision only, never command text. `check.sh` sets
+`INTERLOCK_CHECK_RUN=1` when it records evidence; that marker only stops a bare
+`check-evidence.sh record` from standing in for a check, and anyone who sets the
+variable deliberately is asserting a result rather than proving one.
 
 Known control limits, stated rather than implied: branch protection can require
 the `verify` check, but this personal repository has no organization-level

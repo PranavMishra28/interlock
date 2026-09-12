@@ -10,7 +10,7 @@ tree_id() {
     git diff --binary HEAD
     while IFS= read -r -d '' file; do
       printf '%s\0' "$file"
-      git hash-object "$file"
+      git hash-object -- "$file"
     done < <(git ls-files -z --others --exclude-standard)
   } | git hash-object --stdin
 }

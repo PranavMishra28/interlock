@@ -23,7 +23,7 @@ Interlock functionality.
 | Core Requirements & Functionality | the authorized Slack channel and real Cloud Run target complete the bounded loop; any fallback remains separately labeled | not started |
 | Innovation & Theme Alignment | conversation/page context materially resolves the decision; context-removal case abstains | not started |
 | Technical Execution & Integration | hold refuses the operation; interrupted recovery resets; uncertain/wrong-revision behavior stays failed; target is read back | not started |
-| Usefulness & Agentic Experience | verified operator approves exact revision, sees timestamps/state, and retains an auditable receipt | not started |
+| Usefulness & Agentic Experience | the trusted configured owner approves the exact revision, sees timestamps/state, and retains an auditable receipt | not started |
 
 - [ ] Every claim maps to a test, receipt, live read-back, or video timestamp.
 - [ ] Inherited, event-built, fake, synthetic, local, and cloud behavior are
@@ -56,9 +56,10 @@ Interlock functionality.
 ## Draft placeholders
 
 - Project title: **Interlock**
-- Planned-use sentence: Interlock turns one operational decision in an opted-in
-  workspace into an approved temporary constraint, then observes, performs one
-  authorized continuation, verifies it, and retains evidence.
+- Planned-use sentence: Interlock turns one operational decision in a single
+  administrator-authorized Slack incident channel into an approved temporary
+  constraint, then observes, performs one authorized continuation, verifies it,
+  and retains evidence.
 - Public repository: https://github.com/PranavMishra28/interlock
 - Description: _write after event work exists_
 - Event-built files/commits: _none yet_

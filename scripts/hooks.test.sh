@@ -18,6 +18,7 @@ compact=$(event preCompact | "$ROOT/.cursor/hooks/context.sh")
 
 for command in "git reset --hard HEAD" "git push --force origin main" "git push origin +main" \
   "/usr/bin/git reset --hard" "git -c core.pager=cat reset --hard" "git add -f .env" \
+  "git -C . reset --hard" "git --git-dir=.git clean -fd" \
   "git tag -f pre-event-baseline HEAD" "git rebase main" "git commit --amend" \
   "git config --global user.name x" "gh pr merge 5 --admin" "set -x" "set -o xtrace"; do
   result=$(event beforeShellExecution "$command" | "$ROOT/.cursor/hooks/before-shell.sh")
