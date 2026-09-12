@@ -39,6 +39,11 @@ test("bounded context remains attributed and labels it untrusted", () => {
   assert.match(prompt, /UNTRUSTED_CONTEXT_JSON/);
   assert.match(prompt, /"deliveryId":"d1"/);
   assert.match(prompt, /Never choose an owner, authorize, execute/);
+  // The prompt demands "the supplied output shape", so it has to supply one;
+  // without it a real model returns JSON that fails the discriminated union.
+  for (const key of ["kind", "proposal", "abstain", "sourceDeliveryIds", "windowMs"]) {
+    assert.match(prompt, new RegExp(key));
+  }
   assert.throws(
     () => boundedIntentInput({ ...input, messages: Array(13).fill(input.messages[0]) }),
     /1 to 12/,

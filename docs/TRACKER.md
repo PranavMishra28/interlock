@@ -403,15 +403,32 @@ before compaction.
   on that clean committed tree; 28 channel-slack tests include the Socket Mode
   proposal and approval paths. The live column stays unverified until one real
   unmentioned `#incidents` message produces a workflow.
+- Socket Mode carried a real unmentioned `#incidents` message to the listener,
+  which settles the transport question: ambient pickup works, and Slack even
+  redelivered the queued event after a restart. Ingress then failed closed
+  inside Intent. `INTERLOCK_INTENT_PROMPT` ordered the model to "return only the
+  supplied output shape" while supplying no shape, so a real model returned JSON
+  with no `kind` and `intentOutputSchema` rejected it. Every synthetic run
+  substitutes a deterministic stub model, so no offline check could have caught
+  it; this was the first real model call on the path. The prompt now states both
+  the proposal and abstain shapes, which repairs the managed adapter path too
+  rather than only the Socket Mode caller. A prompt guard in
+  `interlock-intent.test.ts` fails against the old prompt and passes against the
+  new one. Two silent failures also became visible, because a dropped envelope
+  and a dead socket looked identical from the channel: each envelope now logs
+  its outcome, and handler rejections print instead of being swallowed.
+  Targeted checks: 28 channel-slack tests, 11 agent-core tests, both typechecks
+  clean. The live column still stays unverified: no proposal card has been
+  posted and no approval has been exercised end to end.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
   complete Slack-to-receipt flow. The existing bot may still need the one human
   `/invite @Interlock` action in the configured channel.
-- Exact next action: clear the live `checkout` fault with
-  `node --env-file=.env scripts/walkthrough.mjs --fault off`, then `npm run
-  demo` with `INTERLOCK_SLACK_APP_TOKEN` set and post one unmentioned
-  #incidents message. Do not @-mention the bot. Do not present
+- Exact next action: with the fault already cleared and the listener online,
+  post one unmentioned #incidents message, confirm the log reports
+  `slack events_api → proposed`, and approve the exact-revision card. Do not
+  @-mention the bot. Do not present
   the managed adapter or the synthetic walkthrough as live Slack evidence.
   Video, social publication, and portal submission remain human-only.
 

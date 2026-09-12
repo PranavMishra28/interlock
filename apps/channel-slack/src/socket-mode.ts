@@ -21,7 +21,9 @@ export async function openSlackSocket(
       socket.send(JSON.stringify({ envelope_id: envelope.envelope_id }));
     }
     if (envelope.type === "hello" || envelope.type === "disconnect") return;
-    void onEnvelope(envelope).catch(() => undefined);
+    void onEnvelope(envelope).catch((error: unknown) => {
+      console.error(`  slack envelope failed: ${error instanceof Error ? error.message : String(error)}`);
+    });
   });
   await new Promise<void>((resolve, reject) => {
     socket.addEventListener("open", () => resolve(), { once: true });

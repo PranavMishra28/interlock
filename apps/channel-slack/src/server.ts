@@ -58,7 +58,11 @@ if (appToken) {
       candidateRevision: required("INTERLOCK_TARGET_REVISION"),
       ownerId: required("INTERLOCK_OWNER_ID"),
       botToken,
-    }).then(() => undefined),
+    }).then((outcome) => {
+      // A silent drop and a silent socket are indistinguishable to an operator
+      // watching a channel, so every envelope reports what became of it.
+      console.log(`  slack ${envelope.type ?? "event"} → ${outcome}`);
+    }),
   );
   const heartbeat = () =>
     reportListenerHeartbeat(heartbeatConfig, socket.readyState === WebSocket.OPEN)
