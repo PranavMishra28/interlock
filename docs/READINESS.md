@@ -173,13 +173,38 @@ upgraded Next 15→16 and rewrote inherited config; it was not merged. Forcing
 transitive overrides would cross package compatibility contracts, especially
 Undici 5→6, without upstream evidence.
 
-**Restriction:** do not host or publicly expose the inherited starter and do
-not enable live Slack/model traffic until P0 reviews updated upstream releases
-or narrowly scoped compatible parent-package patches. Any accepted difference
-must be recorded in provenance and pass clean install, tests, build, browser,
-and audit checks. Do not dismiss the alerts or force a major just to make the
-count green. If high-severity reachable paths remain, live use is blocked and
-the local deterministic slice stays offline.
+**Restriction:** do not host or publicly expose the inherited starter. Any
+accepted difference must be recorded in provenance and pass clean install,
+tests, build, browser, and audit checks. Do not dismiss the alerts or force a
+major just to make the count green.
+
+**Reviewed 2026-09-12, maintainer-authorized amendment.** The latest compatible
+upstream release was evaluated: `@copilotkit/runtime` 1.70.3 → 1.71.1 and
+`@copilotkit/react-core` 1.70.1 → 1.71.1 do **not** clear the reachable
+high-severity paths. PostCSS remains pinned by Next 15.5.25 and is only fixed
+by Next 16; runtime 1.71.1 still admits Undici 5.29.0 through an
+`@ai-sdk/google-vertex` path Interlock never loads; Express 4 still selects
+`qs` below the fixed 6.16.0. Neither forcing transitive overrides nor taking
+Next 15→16 is accepted, because both cross compatibility contracts and would
+destabilize the demonstration.
+
+Live Slack/OpenAI/Cloud Run traffic is therefore authorized **only** under all
+of these conditions, with the residual risk accepted and recorded rather than
+hidden:
+
+- every Interlock listener binds loopback (`127.0.0.1`) and nothing is hosted,
+  tunnelled, or published;
+- the vulnerable paths are not reachable in this topology: PostCSS runs only in
+  the local build toolchain, the Undici path belongs to an unloaded Vertex
+  provider, and `qs` parses no untrusted public query string;
+- untrusted Slack content stays untrusted input to a bounded interpreter that
+  holds no authority;
+- the residual exposure is disclosed in provenance and submission rather than
+  presented as clean.
+
+If Interlock is ever hosted, exposed publicly, or given a public callback, this
+amendment does not apply and live use is blocked again until the reachable
+high-severity paths clear.
 
 Two inherited security boundaries also block deployment as-is:
 

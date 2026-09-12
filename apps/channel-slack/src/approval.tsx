@@ -99,6 +99,31 @@ export function interlockApproval(config: {
   });
 }
 
+/**
+ * The tool-handler `Thread` contract is narrower than the Channels runtime
+ * object it actually receives, so the durable post is reached through an
+ * explicit capability check rather than an unchecked cast.
+ */
+type DurableThread = {
+  postRegisteredComponent(
+    componentName: string,
+    props: Record<string, unknown>,
+    renderContext: { platform: "slack"; signal: AbortSignal },
+  ): Promise<unknown>;
+};
+
+function durable(thread: unknown): DurableThread {
+  const candidate = thread as Partial<DurableThread>;
+  if (typeof candidate.postRegisteredComponent !== "function") {
+    // Refusing beats posting a button that looks live and is inert after a
+    // restart: an approval nobody can action is worse than a visible failure.
+    throw new Error(
+      "This Channels runtime cannot post a registered component, so an approval could not survive a listener restart.",
+    );
+  }
+  return candidate as DurableThread;
+}
+
 export function interlockProposal(config: {
   allowedWorkspaceId: string;
   allowedChannelId: string;
@@ -108,7 +133,6 @@ export function interlockProposal(config: {
   token: string;
   request?: typeof fetch;
 }) {
-  const approval = interlockApproval(config);
   return defineChannelTool({
     name: "propose_interlock",
     description:
@@ -165,10 +189,18 @@ export function interlockProposal(config: {
         cardToken: z.string(),
         condition: z.string(),
       }).parse(await response.json());
-      await thread.post(await approval.render(props, {
+      // Post by registered name, never as pre-rendered IR. The snapshot keeps
+      // the component name and these exact props, so a listener restart
+      // re-renders the card and rebuilds its click handler. Pre-rendered IR
+      // persists only a path into a tree the restarted process no longer has,
+      // which leaves an approval button that looks live and does nothing.
+      // ponytail: `postRegisteredComponent` is marked internal in
+      // channels-core 0.9.2. It is the only durable path today; move to the
+      // public equivalent when one ships.
+      await durable(thread).postRegisteredComponent("interlock_approval", props, {
         platform: "slack",
         signal: signal ?? new AbortController().signal,
-      }));
+      });
       return "Persisted and displayed the exact Interlock proposal. Stop without restating it.";
     },
   });

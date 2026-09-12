@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 import { InterlockStore } from "./interlock-store";
 import type { SourceMessage } from "agent-core/interlock";
 import { InterlockCoordinator } from "./interlock-coordinator";
+import { CloudRunAdapter } from "./cloud-run-adapter";
+import { googleAccessToken } from "./google-token";
+import { createSupervisor } from "./supervisor";
 
 type CoordinatorOptions = {
   ingressToken?: string;
@@ -292,6 +295,39 @@ export function createCoordinator(
       return;
     }
 
+    // Refusal surface. An out-of-band promoter asks here instead of calling
+    // Cloud Run directly, and is refused with the workflow status as the
+    // reason until Interlock's own evidence-bound promotion has closed.
+    if (
+      request.method === "POST" &&
+      request.url === "/v1/promote" &&
+      options.ingressToken &&
+      options.workflowCoordinator
+    ) {
+      const token = request.headers.authorization?.replace(/^Bearer /, "") ?? "";
+      if (!sameSecret(token, options.ingressToken)) {
+        response.writeHead(401).end();
+        return;
+      }
+      try {
+        const input = await readJson(request) as Record<string, unknown>;
+        if (typeof input.workflowId !== "string") {
+          response.writeHead(400).end();
+          return;
+        }
+        const decision = options.workflowCoordinator.requestPromotion(
+          input.workflowId,
+        );
+        response.writeHead(decision.allowed ? 200 : 409, {
+          "content-type": "application/json",
+        });
+        response.end(JSON.stringify(decision));
+      } catch {
+        response.writeHead(404).end();
+      }
+      return;
+    }
+
     {
       response.writeHead(404, { "content-type": "application/json" });
       response.end(JSON.stringify({ error: "not_found" }));
@@ -325,10 +361,44 @@ function start() {
     allowedChannelId: process.env.INTERLOCK_SLACK_CHANNEL_ID,
     workflowCoordinator,
   });
+
+  const project = process.env.GOOGLE_CLOUD_PROJECT;
+  const region = process.env.GOOGLE_CLOUD_REGION;
+  const service = process.env.INTERLOCK_TARGET_SERVICE;
+  const supervisor =
+    workflowCoordinator && project && region && service && targetUrl &&
+      candidateRevision
+      ? createSupervisor({
+          coordinator: workflowCoordinator,
+          adapter: new CloudRunAdapter(
+            {
+              project,
+              region,
+              service,
+              revision: candidateRevision,
+              healthUrl: new URL("/health", targetUrl).toString(),
+            },
+            googleAccessToken(),
+          ),
+          onError: (error) =>
+            console.error(
+              "Interlock observation failed:",
+              error instanceof Error ? error.message : "unknown error",
+            ),
+        })
+      : undefined;
+
   server.listen(port, "127.0.0.1", () => {
     console.log(`Interlock coordinator listening on http://127.0.0.1:${port}`);
+    if (supervisor) {
+      supervisor.start();
+      console.log(`Observing ${service} in ${region} for revision ${candidateRevision}.`);
+    } else {
+      console.log("Enforcement is idle: no Cloud Run target is configured.");
+    }
   });
   const close = () => server.close(() => {
+    supervisor?.stop();
     store.close();
     process.exit(0);
   });
