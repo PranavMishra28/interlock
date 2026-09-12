@@ -30,6 +30,9 @@ test("walkthrough preflight creates one empty ignored artifact and stays offline
   });
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /No service.+network call ran/);
+  assert.match(result.stdout, /no Slack channel and no people talking/i);
+  assert.match(result.stdout, /ordinary unmentioned message/i);
+  assert.match(result.stdout, /Do not create channels or emulate people/i);
 
   const artifact = join(root, ".interlock/walkthrough-notes.md");
   assert.equal((await readFile(artifact)).length, 0);

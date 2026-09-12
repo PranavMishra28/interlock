@@ -120,7 +120,7 @@ test("integrated hold refuses promotion, then claims once and retains receipt", 
   }
 });
 
-test("verification waits for Cloud Run routing propagation without promoting twice", async () => {
+test("verification waits past 30 seconds for routing without promoting twice", async () => {
   const runtime = verificationRuntime();
   const fixture = setup(runtime);
   try {
@@ -139,7 +139,7 @@ test("verification waits for Cloud Run routing propagation without promoting twi
           reads += 1;
           verificationObservedAt = runtime.clock();
           return {
-            revision: reads === 1 ? "v41" : "v42",
+            revision: reads <= 31 ? "v41" : "v42",
             trafficPercent: 100,
             healthValue: 0.2,
             observedAt: verificationObservedAt,
@@ -151,7 +151,7 @@ test("verification waits for Cloud Run routing propagation without promoting twi
 
     assert.equal(retired.status, "RETIRED");
     assert.equal(promotions, 1);
-    assert.equal(reads, 2);
+    assert.equal(reads, 32);
     assert.equal(retired.receipt?.observedAt, verificationObservedAt);
   } finally {
     fixture.close();

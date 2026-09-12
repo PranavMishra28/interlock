@@ -46,6 +46,7 @@ export function seedDemo(
   store: InterlockStore,
   coordinator: InterlockCoordinator,
   now = Date.now(),
+  report: (beat: string) => void = () => undefined,
 ) {
   const existing = store.get("demo-hold-v42");
   if (existing) return existing;
@@ -76,12 +77,25 @@ export function seedDemo(
     proposalExpiresAt: now + 300_000,
   };
   coordinator.propose(contract, now);
-  return coordinator.approve(
+  report("Intent + scope: synthetic message proposed checkout v42.");
+  try {
+    coordinator.approve(contract.id, "U-DEMO-WRONG-ACTOR", contract.revision, now + 1);
+  } catch {
+    report("Authority refused: wrong actor cannot approve.");
+  }
+  try {
+    coordinator.approve(contract.id, DEMO_TRUSTED.ownerId, contract.revision + 1, now + 1);
+  } catch {
+    report("Authority refused: owner cannot approve the wrong revision.");
+  }
+  const approved = coordinator.approve(
     contract.id,
     DEMO_TRUSTED.ownerId,
     contract.revision,
     now + 1,
   );
+  report("Authority accepted: configured owner approved exact revision 1.");
+  return approved;
 }
 
 function demoDatabasePath() {
@@ -103,7 +117,7 @@ async function start() {
 
   const store = new InterlockStore(path);
   const coordinator = new InterlockCoordinator(store, DEMO_TRUSTED);
-  const workflow = seedDemo(store, coordinator);
+  const workflow = seedDemo(store, coordinator, Date.now(), console.log);
   const target = new DemoTarget();
   const server = createCoordinator(store, {
     evidenceSource: "synthetic",
@@ -126,6 +140,11 @@ async function start() {
   console.log("Interlock demo coordinator: http://127.0.0.1:4318");
   console.log(`Persistent demo store: ${path}`);
   console.log(`Starting state: ${workflow.status}; target health 0.9 (unhealthy)`);
+  const refusal = coordinator.requestPromotion(workflow.contract.id);
+  console.log(
+    `Enforcement refused promotion: allowed=${refusal.allowed}` +
+      ("reason" in refusal ? `; reason=${refusal.reason}` : ""),
+  );
 
   let lastStatus = workflow.status;
   const statusLog = setInterval(() => {

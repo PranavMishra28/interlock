@@ -39,8 +39,14 @@ async function preflight() {
 
   console.log(`Preflight passed (offline). Confidential notes: ${artifact}`);
   console.log("No service, credential check, dev server, coordinator, or network call ran.");
-  console.log("\nNext: follow docs/RUNBOOK.md#canonical-private-test-and-recorded-demo-walkthrough");
-  console.log("Stop before the live stage unless every live gate there is green.");
+  console.log("\nSynthetic product-logic story (no Slack channel and no people talking):");
+  console.log("  Terminal A: npm run demo --workspace web -- --reset");
+  console.log("  Terminal B: INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4318 npm run dev:web");
+  console.log("  Open: http://localhost:3100");
+  console.log("\nLive SLACK-1 only: use the one channel named by INTERLOCK_SLACK_CHANNEL_ID.");
+  console.log("Invite the existing Interlock bot there with /invite @Interlock, then one human");
+  console.log("posts one ordinary unmentioned message. Do not create channels or emulate people.");
+  console.log("Full gates: docs/RUNBOOK.md#canonical-private-test-and-recorded-demo-walkthrough");
 }
 
 function coordinatorUrl() {

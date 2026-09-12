@@ -168,6 +168,23 @@ non-deploying. Existing starter tests do not prove Interlock behavior.
 
 ## Canonical private test and recorded demo walkthrough
 
+Choose one path; they prove different things:
+
+- **Private product-logic demo and offline tests:** no Slack channel, Slack app,
+  credentials, or people talking are required. Run the synthetic walkthrough
+  below. It tells the full Intent → Scope → Authority → Enforcement → Evidence
+  → Closure story with labeled synthetic input and must never be cited as live
+  Slack evidence.
+- **Live SLACK-1 evidence:** use exactly the existing incident channel whose ID
+  is `INTERLOCK_SLACK_CHANNEL_ID`. Do not create another channel, managed
+  Intelligence Channel, or Slack app. Put the bot token in
+  `INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_BOT_TOKEN` and the signing secret in
+  `INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_SIGNING_SECRET` in the approved ignored
+  `.env`, attach the existing managed Channel, and invite the existing bot once
+  with `/invite @Interlock`. One human then posts one ordinary **unmentioned**
+  message. No mention and no group of people acting out a conversation are
+  needed.
+
 Run this once before either walkthrough:
 
 ```bash
@@ -227,7 +244,10 @@ receipt for `v42`, 100% routing, and health `0.1`. This proves the real local
 store/coordinator/supervisor control flow only. It proves no Slack, model, or
 Cloud Run behavior. Stop and mark the walkthrough failed if the source label is
 missing, the hold does not remain closed while unhealthy, the receipt differs,
-or any service error is hidden. `Ctrl-C` only these two processes before retry.
+or any service error is hidden. Terminal A must also show wrong-actor approval
+refused, wrong-revision approval refused, exact-owner approval accepted, and
+promotion refused during the active hold. No Slack channel or human
+conversation is involved. `Ctrl-C` only these two processes before retry.
 
 ### 2. Control Room review
 
@@ -242,8 +262,26 @@ ambiguous next action, clipped content, or a false connectivity claim.
 ### 3. Live capability gate
 
 This stage is blocked until Slack is genuinely available. It is never replaced
-by the synthetic rehearsal. After the operator has placed fresh credentials in
-the approved ignored configuration, run:
+by the synthetic rehearsal. Use the one existing incident channel named by
+`INTERLOCK_SLACK_CHANNEL_ID`; do not create a second channel or app. After the
+operator has placed the fresh bot token and signing secret in the two `.env`
+variables named above, attach them to the existing `interlock` managed Channel:
+
+```bash
+npm run channel:setup
+```
+
+Select the existing `interlock` Channel. If the setup flow offers only to create
+a new Channel or app, cancel it; do not create a fallback. Then invite the bot
+from the configured Slack channel:
+
+```text
+/invite @Interlock
+```
+
+Slack controls private-channel membership, so this is the one remaining human
+setup step. Do not paste credentials into a command or ask the bot to invite
+itself. Then run:
 
 ```bash
 npm run doctor
@@ -295,7 +333,9 @@ candidate revision. A wrong or duplicate proposal, bot loop, invented value, or
 missing proposal is a failed run. The configured owner—and nobody else—clicks
 the exact-revision approval button. An unauthorized actor must remain rejected;
 do not use that negative control in the ≤120-second capture unless already
-verified privately.
+verified privately. Only the posting human and configured owner need to act
+(they may be the same person); do not emulate additional people or post fake
+conversation.
 
 While the target is still unhealthy, run:
 
@@ -369,9 +409,11 @@ record or claim the integrated demo.
 This rehearsal is available before Slack access and does not satisfy
 RELEASE-1 or DEMO-1. It uses the event-built SQLite store, coordinator, and
 supervisor with one in-process synthetic target. The seeded revision-bound hold
-starts unhealthy, so promotion remains refused, then receives a six-second
+shows wrong-actor and wrong-revision rejection before exact-owner approval,
+starts unhealthy so promotion remains refused, then receives a six-second
 healthy window and permits one continuation. Both the coordinator snapshot and
-Control Room identify the evidence as synthetic.
+Control Room identify the evidence as synthetic. It requires no Slack channel,
+Slack credential, or person posting messages.
 
 Start from a known local demo state:
 

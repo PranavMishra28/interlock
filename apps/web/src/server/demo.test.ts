@@ -13,11 +13,22 @@ test("demo seeds one approved persistent contract and enforces its revision", as
   let store = new InterlockStore(path);
   try {
     const coordinator = new InterlockCoordinator(store, DEMO_TRUSTED);
-    const seeded = seedDemo(store, coordinator, 1_000);
+    const beats: string[] = [];
+    const seeded = seedDemo(store, coordinator, 1_000, (beat) => beats.push(beat));
     assert.equal(seeded.status, "ACTIVE_HOLD");
     assert.equal(seeded.contract.threshold, 0.5);
     assert.equal(seeded.contract.windowMs, 6_000);
     assert.match(seeded.contract.sourceMessageRef, /synthetic/i);
+    assert.deepEqual(beats, [
+      "Intent + scope: synthetic message proposed checkout v42.",
+      "Authority refused: wrong actor cannot approve.",
+      "Authority refused: owner cannot approve the wrong revision.",
+      "Authority accepted: configured owner approved exact revision 1.",
+    ]);
+    assert.deepEqual(coordinator.requestPromotion(seeded.contract.id), {
+      allowed: false,
+      reason: "ACTIVE_HOLD",
+    });
     assert.equal(seedDemo(store, coordinator, 2_000).contract.id, seeded.contract.id);
     assert.equal(store.list().length, 1);
 

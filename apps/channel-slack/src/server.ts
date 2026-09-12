@@ -77,5 +77,7 @@ heartbeatTimer = setInterval(heartbeat, 10_000);
 const port = Number(process.env.PORT ?? 3000);
 server.listen(port, "127.0.0.1", () => {
   console.log(`\n  ✓ Channel "${process.env.CHANNEL_CODE}" online — listening on 127.0.0.1:${port}`);
-  console.log(`    Invite the bot to a channel (/invite @yourbot), then @-mention it.\n`);
+  console.log(
+    `    In the one configured incident channel, /invite @Interlock once, then post an ordinary unmentioned message.\n`,
+  );
 });
