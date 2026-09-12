@@ -2,7 +2,11 @@ import {
   emptyState,
   executionGate,
   fixtureStates,
+  healthChartDomain,
+  healthChartX,
   healthChartY,
+  lifecycleNext,
+  lifecycleReached,
   loadSnapshot,
   type FixtureState,
 } from "@/lib/control-room";
@@ -19,26 +23,6 @@ const lifecycle = [
   "Retirement",
 ] as const;
 
-const reached: Record<string, number> = {
-  PROPOSED: 1,
-  ACTIVE_HOLD: 3,
-  OBSERVING: 4,
-  READY: 4,
-  DISPATCHING: 6,
-  NEEDS_INTERVENTION: 7,
-  RETIRED: 8,
-};
-
-const next: Record<string, string> = {
-  PROPOSED: "Await configured owner",
-  ACTIVE_HOLD: "Observe fresh health",
-  OBSERVING: "Complete sustained window",
-  READY: "Claim exact promotion",
-  DISPATCHING: "Read target state",
-  NEEDS_INTERVENTION: "Operator resolution",
-  RETIRED: "Retain receipt",
-};
-
 export default async function Home({
   searchParams,
 }: {
@@ -50,10 +34,31 @@ export default async function Home({
     : "observing";
   const snapshot = await loadSnapshot(fixture);
   const workflow = snapshot.workflow;
-  const points = snapshot.samples.map((sample, index) => {
-    const x = snapshot.samples.length === 1 ? 320 : 24 + index * (592 / (snapshot.samples.length - 1));
-    return `${x},${healthChartY(sample.value)}`;
-  }).join(" ");
+  const resets = workflow?.observation?.resets ?? [];
+  const chartTimes = [
+    ...snapshot.samples.map(({ observedAt }) => observedAt),
+    ...resets.map(({ at }) => at),
+  ];
+  const chartStart = Math.min(...chartTimes);
+  const chartEnd = Math.max(...chartTimes);
+  const chartX = (at: number) => healthChartX(at, chartStart, chartEnd);
+  const chartDomain = workflow
+    ? healthChartDomain(workflow.contract.threshold, snapshot.samples)
+    : 1;
+  const points = snapshot.samples.map((sample) => ({
+    ...sample,
+    x: chartX(sample.observedAt),
+    y: healthChartY(sample.value, chartDomain),
+  }));
+  const latestReset = resets.reduce<typeof resets[number] | undefined>(
+    (latest, reset) => !latest || reset.at > latest.at ? reset : latest,
+    undefined,
+  );
+  const lastSample = snapshot.samples.reduce<typeof snapshot.samples[number] | undefined>(
+    (latest, sample) =>
+      !latest || sample.observedAt > latest.observedAt ? sample : latest,
+    undefined,
+  );
   const elapsed = workflow?.observation?.windowStartedAt
     ? Math.max(0, workflow.observation.observedAt - workflow.observation.windowStartedAt)
     : 0;
@@ -68,8 +73,15 @@ export default async function Home({
             One decision. One authority boundary. Independently verified.
           </p>
         </div>
-        <span className="cr-mode" data-source={snapshot.source}>
-          {snapshot.source === "synthetic" ? "TEST INPUT — SYNTHETIC" : "Coordinator data"}
+        <span
+          className="cr-mode"
+          data-source={snapshot.coordinator.connected ? snapshot.source : "coordinator-error"}
+        >
+          {snapshot.coordinator.connected
+            ? snapshot.source === "synthetic" ? "TEST INPUT — SYNTHETIC" : "Coordinator data"
+            : snapshot.source === "synthetic"
+              ? "TEST INPUT — SYNTHETIC · COORDINATOR UNREACHABLE"
+              : "Coordinator unreachable"}
         </span>
       </header>
 
@@ -93,9 +105,29 @@ export default async function Home({
               <div><dt>Owner / approval</dt><dd>{workflow.contract.ownerId} · r{workflow.approval?.revision ?? "—"}</dd></div>
               <div><dt>Policy</dt><dd>≤ {workflow.contract.threshold} for {workflow.contract.windowMs / 1_000}s</dd></div>
               <div><dt>Execution gate</dt><dd>{executionGate(workflow.status)}</dd></div>
-              <div><dt>Next</dt><dd>{next[workflow.status]}</dd></div>
-              <div><dt>Coordinator</dt><dd className={snapshot.coordinator.connected ? "is-good" : "is-bad"}>{snapshot.coordinator.connected ? "Connected" : "Unavailable"}</dd></div>
-              <div><dt>Slack listener</dt><dd className={snapshot.listener.connected ? "is-good" : "is-stale"}>{snapshot.listener.connected ? "Connected" : "Not connected"}</dd></div>
+              <div><dt>Next</dt><dd>{lifecycleNext[workflow.status]}</dd></div>
+              <div>
+                <dt>Coordinator</dt>
+                <dd className={snapshot.coordinator.connected ? "is-good" : "is-bad"}>
+                  {snapshot.coordinator.connected ? "Connected" : "Unavailable"}
+                  {snapshot.coordinator.reason ? ` · ${snapshot.coordinator.reason}` : ""}
+                  {" · "}{snapshot.coordinator.lastSeenAt ? "Last seen " : "Status as of "}
+                  <time dateTime={new Date(snapshot.coordinator.lastSeenAt ?? snapshot.asOf).toISOString()}>
+                    {new Date(snapshot.coordinator.lastSeenAt ?? snapshot.asOf).toLocaleTimeString("en-US", { timeZone: "UTC" })} UTC
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt>Slack listener</dt>
+                <dd className={snapshot.listener.connected ? "is-good" : "is-stale"}>
+                  {snapshot.listener.connected ? "Connected" : "Not connected"}
+                  {snapshot.listener.reason ? ` · ${snapshot.listener.reason}` : ""}
+                  {" · "}{snapshot.listener.lastSeenAt ? "Last seen " : "Status as of "}
+                  <time dateTime={new Date(snapshot.listener.lastSeenAt ?? snapshot.asOf).toISOString()}>
+                    {new Date(snapshot.listener.lastSeenAt ?? snapshot.asOf).toLocaleTimeString("en-US", { timeZone: "UTC" })} UTC
+                  </time>
+                </dd>
+              </div>
             </dl>
           </section>
 
@@ -115,11 +147,17 @@ export default async function Home({
                   <line x1="24" x2="616" y1="24" y2="24" className="cr-gridline" />
                   <line x1="24" x2="616" y1="80" y2="80" className="cr-gridline" />
                   <line x1="24" x2="616" y1="136" y2="136" className="cr-gridline" />
-                  <line x1="24" x2="616" y1={healthChartY(workflow.contract.threshold)} y2={healthChartY(workflow.contract.threshold)} className="cr-threshold" />
-                  <polyline points={points} className="cr-line" />
-                  {snapshot.samples.map((sample, index) => {
-                    const [x, y] = points.split(" ")[index]!.split(",");
-                    return <circle key={sample.observedAt} cx={x} cy={y} r="5" className={sample.value <= workflow.contract.threshold ? "cr-point" : "cr-point cr-point--bad"} />;
+                  <line x1="24" x2="616" y1={healthChartY(workflow.contract.threshold, chartDomain)} y2={healthChartY(workflow.contract.threshold, chartDomain)} className="cr-threshold" />
+                  {resets.map((reset, index) => (
+                    <g key={`${reset.at}-${index}`}>
+                      <title>Window reset: {reset.reason}</title>
+                      <line x1={chartX(reset.at)} x2={chartX(reset.at)} y1="20" y2="140" className="cr-reset" />
+                      <circle cx={chartX(reset.at)} cy="20" r="4" className="cr-reset-marker" />
+                    </g>
+                  ))}
+                  <polyline points={points.map(({ x, y }) => `${x},${y}`).join(" ")} className="cr-line" />
+                  {points.map((sample) => {
+                    return <circle key={sample.observedAt} cx={sample.x} cy={sample.y} r="5" className={sample.value <= workflow.contract.threshold ? "cr-point" : "cr-point cr-point--bad"} />;
                   })}
                 </svg>
                 <figcaption>
@@ -127,9 +165,15 @@ export default async function Home({
                   <span>Window {workflow.contract.windowMs / 1_000}s</span>
                   <span>Elapsed {Math.floor(elapsed / 1_000)}s</span>
                   <span>{workflow.observation?.resets.length ?? 0} reset(s)</span>
+                  {latestReset ? <span>Latest reset: {latestReset.reason}</span> : null}
                 </figcaption>
               </figure>
-              <p className="cr-muted">Last sample <time>{new Date(workflow.observation?.observedAt ?? snapshot.asOf).toLocaleTimeString("en-US", { timeZone: "UTC" })} UTC</time>. Monitoring gaps reset elapsed evidence.</p>
+              <p className="cr-muted">
+                {lastSample ? (
+                  <>Last sample <time dateTime={new Date(lastSample.observedAt).toISOString()}>{new Date(lastSample.observedAt).toLocaleTimeString("en-US", { timeZone: "UTC" })} UTC</time>. </>
+                ) : "No health samples recorded. "}
+                Monitoring gaps reset elapsed evidence.
+              </p>
             </section>
 
             <section className="cr-card" aria-labelledby="lifecycle-title">
@@ -137,9 +181,9 @@ export default async function Home({
               <h2 id="lifecycle-title">What happened, and what can happen next</h2>
               <ol className="cr-rail">
                 {lifecycle.map((label, index) => (
-                  <li key={label} data-state={index < reached[workflow.status] ? "done" : index === reached[workflow.status] ? "current" : "future"}>
-                    <span aria-hidden="true">{index < reached[workflow.status] ? "✓" : index + 1}</span>
-                    <div><strong>{label}</strong><small>{index === reached[workflow.status] ? next[workflow.status] : index < reached[workflow.status] ? "Persisted" : "Not yet authorized"}</small></div>
+                  <li key={label} data-state={index < lifecycleReached[workflow.status] ? "done" : index === lifecycleReached[workflow.status] ? "current" : "future"}>
+                    <span aria-hidden="true">{index < lifecycleReached[workflow.status] ? "✓" : index + 1}</span>
+                    <div><strong>{label}</strong><small>{index === lifecycleReached[workflow.status] ? lifecycleNext[workflow.status] : index < lifecycleReached[workflow.status] ? "Persisted" : "Not yet authorized"}</small></div>
                   </li>
                 ))}
               </ol>
@@ -160,6 +204,11 @@ export default async function Home({
         <section className="cr-card">
           <h2>{emptyState(snapshot.coordinator).title}</h2>
           <p>{emptyState(snapshot.coordinator).body}</p>
+          <p className="cr-muted">
+            Coordinator status checked <time dateTime={new Date(snapshot.asOf).toISOString()}>
+              {new Date(snapshot.asOf).toLocaleTimeString("en-US", { timeZone: "UTC" })} UTC
+            </time>.
+          </p>
         </section>
       )}
     </main>

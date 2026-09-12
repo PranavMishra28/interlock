@@ -641,7 +641,7 @@ p {
   border-radius: 6px;
   background: rgba(20, 103, 217, 0.07);
   color: #0d55b8;
-  font: 600 9px/1.2 var(--font-mono);
+  font: 600 11px/1.2 var(--font-mono);
   letter-spacing: 0.06em;
 }
 .cr-state[data-status="NEEDS_INTERVENTION"] {
@@ -708,6 +708,16 @@ p {
   stroke: #cf694d;
   stroke-width: 1.5;
   stroke-dasharray: 7 6;
+}
+.cr-reset {
+  stroke: var(--warning);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+.cr-reset-marker {
+  fill: var(--warning);
+  stroke: white;
+  stroke-width: 2;
 }
 .cr-line {
   fill: none;
