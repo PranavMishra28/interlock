@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "channels": [
+    {
+      "name": "interlock",
+      "displayName": "Interlock",
+      "providers": {
+        "slack": {
+          "env": {
+            "botToken": "INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_BOT_TOKEN",
+            "signingSecret": "INTELLIGENCE_CHANNEL_INTERLOCK_SLACK_SIGNING_SECRET"
+          }
+        }
+      }
+    }
+  ]
+}

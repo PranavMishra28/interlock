@@ -97,7 +97,7 @@ canonical_provider() {
 
 # ── tier 0 ───────────────────────────────────────────────────────────────────
 if [ -f .env ]; then
-  model="$(trim "${MODEL:-gpt-5.6-sol}")"
+  model="$(trim "${MODEL:-gpt-5.4-mini-2026-03-17}")"
   model_id="$model"
   model_provider=""
   case "$model" in
@@ -139,7 +139,7 @@ if [ -f .env ]; then
       ""|stub-replace-me) fail "OPENAI_API_KEY is required separately for OpenAI Realtime voice, even when chat uses $provider." ;;
     esac
   fi
-  [ -z "${MODEL:-}" ] && warn "MODEL is unset; falling back to gpt-5.6-sol."
+  [ -z "${MODEL:-}" ] && warn "MODEL is unset; falling back to gpt-5.4-mini-2026-03-17."
 
   # ── tier 1: all-or-nothing. Half-configured Channels is the worst state. ──
   if [ -n "${INTELLIGENCE_API_KEY:-}" ] || [ -n "${CHANNEL_CODE:-}" ]; then

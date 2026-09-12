@@ -27,3 +27,6 @@ gha-creds-*.json
 playwright-report/
 test-results/
 .interlock/
+
+# Added by CopilotKit CLI: managed Channel setup credentials and artifacts.
+.copilotkit/artifacts/

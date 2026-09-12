@@ -13,15 +13,17 @@ before compaction.
 - Inspected base: clean `main` at
   `88b6309b071978fb2ec585b683392a11d5283358` (PR #6 merge).
 - Working branch: `build-active`.
-- Last checkpoint: 2026-09-12 env-safety and budget checkpoint. `.env` is parsed
-  as inert data by both `check-env.sh` and `dev.sh` via shared
-  `scripts/load-env.sh`; `npm run doctor` reports configured/missing only;
-  `.env.example` is reduced to the variables Interlock actually reads.
+- Last checkpoint: 2026-09-12 economical model and managed-channel
+  configuration. The configured personal OpenAI project exposes the pinned
+  `gpt-5.4-mini-2026-03-17` snapshot; runtime fallback, preflight, and
+  `.env.example` agree. CopilotKit project `interlock` is bound and its Slack
+  channel record is committed without credentials; Slack OAuth remains
+  ACCESS_REQUIRED.
 - Authorization evidence: the maintainer confirmed the official build opening
   and authorized BUILD_ACTIVE in this session. Scope is the PLAN MVP and
-  personal accounts only. GCP spend is recorded as **$0 Always Free** (see
-  READINESS). OpenAI API credits/budget are still unrecorded. Slack install and
-  a dedicated personal GCP project remain ACCESS_REQUIRED.
+  personal accounts only. GCP spend is recorded as **$0 Always Free** and
+  OpenAI has a **$100 USD hard event cap** with spend minimization required
+  (see READINESS). Slack installation remains ACCESS_REQUIRED.
 - Dirty ownership: lead owns TRACKER/integration; no second writer is active.
 - Last verified: `bash scripts/check.sh` passed on the current working tree:
   inherited typecheck/tests/MCP stdio, web build, phase guard negatives, hook
@@ -87,6 +89,12 @@ before compaction.
   all workspace typechecks, the web build, phase-guard negatives, hook
   fixtures, canonical doc links, workflow policy, and action pins. No external
   account, paid call, or deployment was used.
+- Model/channel checkpoint: targeted agent-core intent/state and environment
+  checks passed (59 tests), followed by agent-core typecheck and canonical
+  documentation links. Full `bash scripts/check.sh` then passed on tree
+  `10556c9:dfc73573c895518cdaa88c8b57b7187d0ecb416a`. The only OpenAI request
+  was a model-list read (no generation); `gpt-5.4-mini-2026-03-17` was present.
+  No model spend was incurred.
 - Live-gap audit correction: the coordinator process is HTTP + SQLite only. It
   never observes health, never refuses a real promotion attempt, never
   constructs `CloudRunAdapter`, and never continues autonomously; `observe`,
@@ -102,7 +110,8 @@ before compaction.
   `{value, observedAt}` contract the adapter requires; an unauthenticated
   `POST /fault` is refused with 403 while a tokened call genuinely degrades
   health to 0.9 and recovers to 0.1. The teardown ledger is in READINESS.
-- Blockers: Slack channel install missing. OpenAI budget unrecorded.
+- Blockers: Slack channel install missing. OpenAI live eval is authorized but
+  waits for the dependency gate and bounded model path to be wired.
   Coordinator process does not yet observe/enforce/continue. Approval cards
   do not survive listener restart. Inherited dependency exposure still blocks
   public hosting.
@@ -128,7 +137,7 @@ normative wording.
 | CAP-LOCAL | Node/npm/Git, inherited workspaces, loopback development | OFFLINE_READY | READINESS versions; `bash scripts/check.sh` |
 | CAP-HARNESS | Project hooks and resume path | OFFLINE_READY | hook fixtures pass; current IDE shell hook observed; fresh-session context check pending |
 | CAP-SLACK | Personal Slack workspace/app and ambient channel delivery | ACCESS_REQUIRED | owner installs after P0; new unmentioned top-level + reply test |
-| CAP-MODEL | Personal OpenAI project/key and agreed API budget | KEY_REQUIRED | one bounded post-P0 behavior/cost check |
+| CAP-MODEL | Personal OpenAI project/key and agreed API budget | OFFLINE_READY | key configured; `gpt-5.4-mini-2026-03-17` available; $100 hard cap recorded; bounded live eval pending dependency gate |
 | CAP-GCP | Dedicated personal GCP project, budget, target and execution identity | LIVE_VERIFIED | `interlock-508417`/`us-central1`; `checkout-v41` serving 100%, `checkout-v42` at 0%; health 0.1/0.9/0.1 observed; unauthenticated fault refused 403 |
 
 Statuses: `OFFLINE_READY`, `KEY_REQUIRED`, `ACCESS_REQUIRED`,
@@ -149,7 +158,7 @@ may be useful but cannot make the original criterion green.
 | UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `ca2dc7c:c556474499785fda6be83ac2a1d01f2d6d469a74` | DONE_IMPL | NOT_REQUIRED |
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
 | SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | IN_PROGRESS (ingress/authority pass; restart cannot rebuild the approval button) | ACCESS_REQUIRED |
-| MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | KEY_REQUIRED |
+| MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | BLOCKED_DEPS |
 | CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | IN_PROGRESS (adapter contract passes; process never constructs it, never refuses a real attempt, never continues) | ACCESS_REQUIRED |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
