@@ -6,7 +6,7 @@ its core functionality built during the event; templates, libraries, prompts,
 and starter code may be reused if the team identifies inherited vs event-built
 work. This file is that identification. It is kept current across the event.
 
-## Status: PREP_ONLY (as of 2026-09-11)
+## Status: PREP_ONLY (as of 2026-09-12 before the official build opening)
 
 Nothing in this repository implements Interlock. Everything here is either
 verbatim inherited starter code or generic repository bootstrap (CI, docs,
@@ -63,8 +63,9 @@ choose), and upstream `README.md`, `AGENTS.md`, `SUBMISSION.md`,
 | `.gitignore` | appended patterns | every `.env.*` except `.env.example`, key material, service-account JSON, local tool state |
 | `.github/workflows/ci.yml` | replaced | inherited workflow used floating `@v4` tags, no timeout/concurrency, and an `examples/auth0` job for code we did not import. New one is SHA-pinned, `contents: read`, PR-safe, telemetry off |
 | `.github/dependabot.yml` | new | grouped weekly updates; majors and the CopilotKit/AG-UI pair excluded |
-| `scripts/check.sh`, `scripts/scope-audit.sh` | new | one verification entrypoint; baseline drift detection |
-| `README.md`, `AGENTS.md`, `CLAUDE.md`, `SECURITY.md`, `HACKATHON_PROVENANCE.md`, `docs/**` | new | this repository's own documentation and plan |
+| `.hackathon-phase` | new after the tag | committed fail-closed phase record; no clock/environment unlock |
+| `scripts/check.sh`, `scripts/scope-audit.sh`, `scripts/scope-audit.test.sh` | new/revised | one verification entrypoint; phase-aware preparation freeze/provenance report; disposable negative cases |
+| `README.md`, `AGENTS.md`, `CLAUDE.md`, `SECURITY.md`, `SUBMISSION.md`, `HACKATHON_PROVENANCE.md`, `docs/**` | new/revised | this repository's documentation, thin inherited-link bridge, tracker, readiness, and build-day runbook |
 
 No inherited application source (`apps/**`, `packages/**`, inherited `scripts/*`,
 manifests, lockfile) has been modified. Administrative deviation from the
@@ -87,13 +88,27 @@ implementation or novelty.
 
 No code from Irrevon, Eonfolk, or any employer repository.
 
-## Event work (fill in during the official build period)
+## Preparation after the immutable tag
+
+The annotated tag `pre-event-baseline` remains at
+`76897ddd227c4d3f06e35063679e7189d075f747`; it is not moved. A later
+pre-opening preparation PR audits and simplifies prose and adds the generic
+phase-aware guard. Work after the old tag is therefore **not automatically
+event work**.
+
+At P0, after the official opening and explicit maintainer authorization, record
+the then-current final PREP_ONLY commit in `.hackathon-phase` and TRACKER. That
+commit—not a timestamp and not the old tag alone—is the event boundary.
+
+| Preparation commit / PR | Change | Product core? |
+|---|---|---|
+| _current preparation PR; fill after merge_ | audit, simplified topology prose, tracker/runbook, phase guard and generic negative tests | no |
+
+## Event work (fill only during an authorized BUILD_ACTIVE phase)
 
 | Commit range | What was built | Inherited pieces it depends on |
 |---|---|---|
-| _empty until the event_ | | |
+| _empty until BUILD_ACTIVE_ | | |
 
-Pre-event baseline: annotated tag `pre-event-baseline`
-(`git rev-list -n1 pre-event-baseline` for the exact commit). Everything at or
-before that tag is inherited scaffolding or bootstrap; everything after it is
-event work and must be listed above.
+The event boundary is the `PREBUILD_COMMIT` recorded by the committed P0 phase
+transition. `scripts/scope-audit.sh` reports every path changed after it.

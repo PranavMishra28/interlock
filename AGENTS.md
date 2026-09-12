@@ -1,76 +1,67 @@
-# Interlock — agent instructions
+# Interlock agent map
 
-## MODE = PREP_ONLY
+## Phase
 
-Interlock is **not implemented** and must not be until the official build
-period of *Agents, Everywhere* (2026-09-12, America/Los_Angeles) opens **and**
-the maintainer gives a separate build instruction. A later clock alone does not
-unlock it. Until then: repository administration, inherited scaffolding,
-generic tooling, verification, and planning prose only. No Interlock prompts,
-schemas, agents, approval/enforcement logic, product UI, fixtures, or infra,
-anywhere (including ignored files, branches, stashes, other repos).
+Read `.hackathon-phase` and `docs/TRACKER.md` before acting. Current phase is
+**PREP_ONLY**: Interlock is not implemented. A clock or environment variable
+cannot unlock work. BUILD_ACTIVE requires the official opening, explicit
+maintainer authorization, a recorded final pre-build commit, and a committed
+phase transition that passes `scripts/scope-audit.sh`.
 
-## Source of truth
+During PREP_ONLY, only repository administration, provenance, reviewed generic
+tooling, inherited-starter verification, and prose planning are allowed. No
+runtime prompts, executable domain schemas/policies/state machines, classifiers,
+approval/enforcement/observation/action logic, product UI, product fixtures or
+tests, or deployment behavior—also not in Markdown, ignored files, branches,
+stashes, patches, or another repo.
 
-- Plan: `docs/PLAN.md` · Readiness/versions/blockers: `docs/READINESS.md`
-- Provenance (inherited vs ours): `HACKATHON_PROVENANCE.md`
-- Event rules: `hackathon-rules.md`, `hackathon-overview.md` (inherited from upstream)
-- Selected template: `templates/web.md` · Sponsor setup: `using-sponsor-tools.md`
-- Security rules: `SECURITY.md` · Submission checklist: `docs/SUBMISSION.md`
+## Canonical documents
 
-## Verified commands (Node 22.x per `.nvmrc`, npm 10.x)
+- Status/next action: `docs/TRACKER.md`
+- Product/topology/invariants: `docs/PLAN.md`
+- Versions/access/risks: `docs/READINESS.md`
+- Build-day prompts/run/reset: `docs/RUNBOOK.md`
+- Inherited vs event work: `HACKATHON_PROVENANCE.md`
+- Submission evidence: `docs/SUBMISSION.md`
+- Security: `SECURITY.md`
+
+Old assistant summaries are not authority. On resume, read this file, TRACKER,
+relevant PLAN sections, and actual Git state. One lead writes shared status;
+reviewers return findings only.
+
+## Boundaries
+
+- Inherited import: commit `79b036635c01d932374bed1013b901283f421096`
+  from CopilotKit starter `2622f07d17850ad68bb9a7266c566c1fefc97df4`.
+  Keep its license, npm workspaces, lockfile, root `@ag-ui/client` override, and
+  compatible CopilotKit package family.
+- Never move/delete `pre-event-baseline`, rewrite history, force-push, weaken
+  checks/protection, bypass a secret block, or discard unrelated work.
+- Never change global Git/editor configuration or invent a Git identity. Use
+  the configured personal identity; if absent, stop.
+- No employer accounts/code, cloud provisioning, billing, IAM changes, public
+  endpoints, app installs, paid calls, package publishing, deploy workflows,
+  `pull_request_target`, or CI secrets without explicit scope authorization.
+- Never print secrets, dump the environment, use `set -x` around credentials,
+  commit `.env`/keys/transcripts/private screenshots/capability URLs, or use
+  `git add -f` to bypass ignores.
+
+## Commands
 
 ```bash
-npm ci                          # exact install from the inherited lockfile
-bash scripts/check.sh           # THE check: lockfile drift, typecheck, tests, MCP, web build, scope audit, action pins
-npm run verify                  # inherited subset (typecheck + tests + MCP stdio)
-npm run build --workspace web   # web template build
-npm run dev:web                 # http://localhost:3100 (needs OPENAI_API_KEY in .env for chat)
-bash scripts/scope-audit.sh     # inherited sources unchanged vs baseline 79b03663
+npm ci --no-audit --no-fund
+bash scripts/check.sh
+npm run verify
+npm run build --workspace web
+bash scripts/scope-audit.sh
 ```
 
-`npm install` is not the install command; never regenerate `package-lock.json`
-without a reviewed reason.
+`npm ci` is the install command. Do not regenerate the inherited lockfile
+without a reviewed, documented security/compatibility reason.
 
-## Repository boundaries
+Before completion: update TRACKER, run `bash scripts/check.sh`, scan tracked
+history and non-generated artifacts for secrets, verify a clean status, and
+require green remote `verify`. Passing starter checks is not proof Interlock
+works.
 
-- Inherited from CopilotKit/agents-everywhere-starter-kit@2622f07 (MIT):
-  `apps/**`, `packages/**`, inherited `scripts/*`, manifests, lockfile,
-  `hackathon-*.md`, `templates/`, `dev-docs/`, `using-sponsor-tools.md`,
-  `CREDITS.md`. Do not edit before the event; the scope audit fails if you do.
-- Ours: `AGENTS.md`, `CLAUDE.md`, `README.md`, `SECURITY.md`,
-  `HACKATHON_PROVENANCE.md`, `docs/`, `.github/`, `scripts/check.sh`,
-  `scripts/scope-audit.sh`, `.gitignore` additions.
-- Upstream rules still apply to the inherited code: keep `@ag-ui/client`
-  deduped via the root `overrides`; bump `@copilotkit/runtime` and
-  `@copilotkit/channels` together; `maxSteps` on `BuiltInAgent` must be > 1.
-
-## Dangerous operations — do not
-
-- Force-push, delete branches/tags, rewrite history, move the baseline tag.
-- Change global git identity; commit as anyone but the configured repo user.
-- Commit `.env*` (except `.env.example`), keys, service-account JSON,
-  transcripts, screenshots with private data, or Trigger.dev token URLs.
-  `git add -f` on an ignored file is never the answer.
-- Print secret values, dump the environment, or `set -x` around credentials.
-- Add deploy/publish steps (`npm publish`, `gcloud run deploy`, …),
-  `pull_request_target`, Actions secrets, or paid API calls to CI. Unpinned
-  actions fail `check.sh`.
-- Weaken `scripts/check.sh`, the `ALLOW` list in `scripts/scope-audit.sh`, CI
-  `permissions`, branch protection, or push protection to make something pass.
-- Provision cloud resources, enable billing, change IAM, or create credentials
-  without explicit scope/budget approval from the maintainer.
-- Use non-personal (employer) accounts or code. No Irrevon/Eonfolk/employer imports.
-
-## Completion checks before you claim done
-
-1. `bash scripts/check.sh` passes locally.
-2. `git status` clean; no untracked secrets (`gitleaks detect --no-git` on the tree).
-3. CI `verify` check green on the PR/commit.
-4. `HACKATHON_PROVENANCE.md` updated if inherited/ours boundary moved.
-5. Passing starter tests is not evidence Interlock works. Say what was verified.
-
-## Editors
-
-Cursor and Codex read this file directly. Claude Code reads `CLAUDE.md`, which
-imports it. Do not create competing instruction files.
+Cursor/Codex read this file; Claude Code reads the thin `CLAUDE.md` import.

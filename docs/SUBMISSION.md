@@ -1,72 +1,73 @@
-# Submission checklist (draft, PREP_ONLY — nothing submitted)
+# Submission checklist (draft)
 
-Deadline and rubric: the [official portal](https://sf.aitinkerers.org/hackathons/h_XWWQL5eKfJM)
-and [handbook](https://sf.aitinkerers.org/hackathons/h_XWWQL5eKfJM/handbook)
-govern. Do not guess a timezone or copy another city's deadline. Publishing
-the post and submitting the entry are separate human actions.
+Nothing is submitted or published. The live
+[portal](https://sf.aitinkerers.org/hackathons/h_XWWQL5eKfJM) controls the
+deadline and organizer instructions.
 
-## Provenance credit (must appear in the description and the repo)
+## Provenance
 
 Inherited: [CopilotKit/agents-everywhere-starter-kit](https://github.com/CopilotKit/agents-everywhere-starter-kit)
-@ `2622f07` (MIT) — web template (Next.js + CopilotKit React + runtime),
-`agent-core` factory, verify scripts. Built during the event: **(fill in from
-`HACKATHON_PROVENANCE.md` → Event work; point to files/commits).**
+at `2622f07d17850ad68bb9a7266c566c1fefc97df4` (MIT), imported at
+`79b036635c01d932374bed1013b901283f421096`. The web and Slack examples,
+agent factory, sample incident, and inherited tests are not event work.
 
-## Evidence for the four official criteria
+Event contribution: fill from the Event work table in
+`HACKATHON_PROVENANCE.md`, citing commit ranges and actual evidence. Never
+describe planning prose, starter behavior, or an approval click as implemented
+Interlock functionality.
 
-| Criterion | Evidence to show | Where it will live | Status |
-|---|---|---|---|
-| Core Requirements & Functionality | one complete workflow: decision in thread → contract → approval → hold → promotion → verified revision → retired; run live, not mocked | demo video 0:20–1:30; acceptance cases in `docs/PLAN.md` §7, trial counts recorded in `docs/READINESS.md` during the event | not started |
-| Innovation & Theme Alignment | the *conversation + live environment* is the context; show what is lost without it (a standalone chatbox cannot bind to the pending release or hold the traffic) | video intro; README "why context matters" | not started |
-| Technical Execution & Integration | show a failure/cancellation path: edited-after-approval invalidation **or** flapping health resetting the window **or** expired hold; explain reconciliation of a lost response | video 1:30–1:50; deterministic tests | not started |
-| Usefulness & Agentic Experience | operator sees proposal, approves the exact revision, watches samples with timestamps, retains control (deny/cancel), gets an evidence trail | UI projection; video | not started |
+## Criterion-to-evidence checklist
 
-- [ ] Every criterion has visible evidence
-- [ ] Live services vs sample data vs session-only state are labeled
-- [ ] Sponsors used are named with their concrete contribution (count is not a criterion)
-
-## Public repository
-
-- [ ] Fresh clone quickstart works (`npm ci && bash scripts/check.sh`)
-- [ ] README lists credentials by **name** and the separate processes (web app, Trigger.dev dev, executor)
-- [ ] CI green on the submitted commit; `HACKATHON_PROVENANCE.md` event table filled
-- [ ] No `.env`, tokens, transcripts, screenshots with secrets, or waitpoint URLs
-- [ ] Post-event cleanup documented (delete worker SA key, tear down Cloud Run services)
-
-## Two-minute demo storyboard (≤120 s, draft)
-
-| t | Shot | Says |
+| Official criterion | Required visible evidence | Status |
 |---|---|---|
-| 0:00–0:15 | Incident page + thread already open; pending revision visible in the resource panel | "An on-call thread. A release is prepared but held. This is the context Interlock lives in." |
-| 0:15–0:35 | Teammate types the decision; Interlock proposes a contract card (target, condition, window, continuation, expiry) | "It heard a decision, not a hypothetical, and proposed a typed constraint. It invented nothing: target and health URL come from an allowlist." |
-| 0:35–0:50 | Operator logs in / approves; card shows revision-bound approval | "Approval binds to this exact revision. An edit would void it." |
-| 0:50–1:15 | Hold timeline: samples with timestamps; one unhealthy sample resets the window | "Fresh samples only. A gap or a blip resets the window; it never assumes continuous health." |
-| 1:15–1:35 | Window satisfied → executor promotes the prepared revision → verifier reads back traffic + fresh health | "The continuation is a traffic shift to a revision built earlier today. Verification checks the served revision, not the request." |
-| 1:35–1:50 | Failure path: an edited contract shows its old approval invalidated (or expired hold banner) | "A timeout is neither consent nor recovery — it leaves an operator-owned hold." |
-| 1:50–2:00 | Evidence trail; provenance line | "Built today on the CopilotKit starter kit, Trigger.dev, Firestore, Cloud Run, OpenAI. Repo linked." |
+| Core Requirements & Functionality | one live selected surface and real selected target complete the bounded loop; limitations labeled | not started |
+| Innovation & Theme Alignment | conversation/page context materially resolves the decision; context-removal case abstains | not started |
+| Technical Execution & Integration | hold refuses the operation; interrupted recovery resets; uncertain/wrong-revision behavior stays failed; target is read back | not started |
+| Usefulness & Agentic Experience | verified operator approves exact revision, sees timestamps/state, and retains an auditable receipt | not started |
 
-## Draft copy (DRAFT — not published; no URLs invented)
+- [ ] Every claim maps to a test, receipt, live read-back, or video timestamp.
+- [ ] Inherited, event-built, fake, synthetic, local, and cloud behavior are
+  labeled.
+- [ ] Dependency security gate cleared for every live process.
+- [ ] Fresh clone and `bash scripts/check.sh` pass at submitted HEAD; CI green.
+- [ ] No secret, transcript, private screenshot, callback URL, or employer data.
+- [ ] Event work table and known limitations are complete.
+- [ ] Video/social URLs are real before insertion.
+- [ ] Human explicitly authorizes publication and submission.
 
-**Title:** Interlock — approve a constraint, not a click
+## Demo storyboard (≤120 seconds)
 
-**Description (draft):** Interlock is an ambient operational-control agent for
-an on-call team's text workspace. When someone states a decision — "hold the
-release until checkout latency is back under 2 s for 15 minutes, then ship
-it" — Interlock proposes a typed constraint bound to a real, allowlisted
-target. An authenticated operator approves that exact revision. A durable
-workflow enforces the hold on the one controlled action, watches fresh health
-samples, promotes the prepared release when the window is satisfied,
-independently verifies the served revision, and retires the constraint with a
-full evidence trail. Timeouts never execute; edits void approvals; UI is a
-projection, never authority. Built during Agents, Everywhere on the CopilotKit
-starter kit with OpenAI, Trigger.dev, Firestore, and Cloud Run.
+1. **0:00–0:15 — context.** Show one opted-in workspace, prepared target, and
+   synthetic incident label. Explain what the context resolves.
+2. **0:15–0:35 — proposal and identity.** A decision yields a bounded proposal;
+   verified operator approves the exact revision.
+3. **0:35–0:55 — enforced hold.** Attempt the controlled promotion and show the
+   server adapter refusing it.
+4. **0:55–1:15 — interrupted recovery.** Show fresh samples, interrupt one, and
+   visibly reset the shortened labeled window.
+5. **1:15–1:38 — authorized continuation.** Recovery holds; exactly one claim
+   promotes the prepared revision on the real selected target.
+6. **1:38–1:52 — verification.** Read back intended revision, effective
+   routing, and fresh health; a failed check must remain failed.
+7. **1:52–2:00 — receipt and provenance.** Show retired active hold, retained
+   correlated receipt, inherited starter credit, and honest limitations.
 
-**Social post (draft):** Built Interlock at #AgentsEverywhere with
-@AITinkerers: an agent that turns an on-call team's *decision* into an
-approved, enforced, verified operational constraint — hold a release, watch
-real health, ship the prepared revision, prove it. Not a chatbot. Repo + demo:
-(links added after recording). Thanks @CopilotKit @OpenAI (+ sponsor tags per
-organizer instructions).
+## Draft placeholders
 
-Demo video URL: _none yet_. Social post URL: _none yet_. Repo:
-https://github.com/PranavMishra28/interlock
+- Project title: **Interlock**
+- Planned-use sentence: Interlock turns one operational decision in an opted-in
+  workspace into an approved temporary constraint, then observes, performs one
+  authorized continuation, verifies it, and retains evidence.
+- Public repository: https://github.com/PranavMishra28/interlock
+- Description: _write after event work exists_
+- Event-built files/commits: _none yet_
+- Selected surface/target: _not selected_
+- Known limitations: _fill from TRACKER_
+- Demo video URL: _none_
+- Social post text/URL: _none_
+
+## Cleanup evidence
+
+Record stopped processes, revoked sessions/keys, Slack removal if applicable,
+personal Cloud Run teardown or retained-cost approval, routing state, local
+secret removal, and confirmation that no unintended public endpoint remains.
