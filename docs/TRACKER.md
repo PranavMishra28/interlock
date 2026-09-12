@@ -348,6 +348,24 @@ before compaction.
   its small-size silhouette was simplified around a larger fingertip gap.
   `npm run demo` now starts the labeled synthetic coordinator and Control Room
   together; the separate commands remain documented for recording each surface.
+- Single-command local verification 2026-09-12 at clean committed
+  `34ea7ab75ab38d8c72e100496b8733750f85c9ef:44ec4591528507af443d2a9ea4c899f1d7ad7969`.
+  Recorded evidence had gone stale when the icon commit moved HEAD past the
+  previous run. `npm run demo` was exercised end to end: it reset the store,
+  bound `127.0.0.1:4318`, waited for that port, then served the Control Room on
+  `3100`. Observed in one run: wrong actor refused, wrong revision refused,
+  exact owner approved revision 1, `ACTIVE_HOLD` with health 0.9, enforcement
+  refused promotion with `allowed=false; reason=ACTIVE_HOLD`, synthetic
+  recovery to 0.1, four unhealthy window resets, then `RETIRED` with one
+  receipt whose `expectedRevision` and `observedRevision` were both `v42` at
+  health 0.1. The coordinator snapshot reported `source: "synthetic"` and the
+  Control Room rendered `TEST INPUT — SYNTHETIC` with the Slack listener
+  honestly `Not connected`. A leftover run holding 4318 or 3100 previously
+  surfaced as a mid-story `EADDRINUSE` stack trace and once failed
+  `scripts/check.sh`; the command now names the port and pid and exits first.
+  Targeted gates: 61 root, 44 web, and the walkthrough preflight plus its test.
+  Full `bash scripts/check.sh` then passed on this clean tree. This pass made no
+  Cloud Run mutation, posted no Slack message, and changed no live column.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
