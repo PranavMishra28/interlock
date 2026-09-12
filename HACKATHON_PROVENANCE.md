@@ -117,6 +117,7 @@ commit—not a timestamp and not the old tag alone—is the event boundary.
 |---|---|---|
 | `dc42655` | recorded official opening, maintainer authorization, and immutable final PREP_ONLY boundary; no product behavior | phase guard and preparation documents |
 | `bfbcbc4` | deterministic revision-bound workflow and intent boundary; native SQLite sole-owner store; loopback coordinator and exact-target adapter contract; read-only Control Room with visibly synthetic fixture; product and reliability tests | inherited TypeScript workspaces, Node 22 `node:sqlite`, Next.js web app and CSS tokens |
+| `87fe0b8` | ambient unmentioned Slack ingress and bounded context persistence; exact-owner/revision approval component and endpoint; Cloud Run v2 adapter contract; Control Room state fixtures/responsive checks; disabled inherited paid/search routes; BUILD_ACTIVE guard-fixture repair | inherited Channels delivery/identity types and durable component API, Next.js routes, Cloud Run REST API |
 
 The event boundary is the `PREBUILD_COMMIT` recorded by the committed P0 phase
 transition. `scripts/scope-audit.sh` reports every path changed after it.

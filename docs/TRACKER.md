@@ -35,10 +35,20 @@ before compaction.
   coordinator/store tests, all inherited checks, web build, and repaired
   phase-guard fixtures. A loopback-only browser preview rendered the visibly
   synthetic Control Room with no model call.
+- Offline integration evidence: `87fe0b8:ec7befb`; the full check passed on its
+  exact pre-commit tree (`bfbcbc4:fd8b187`). Tests cover ambient unmentioned
+  top-level/reply normalization, bot/channel/edit/delivery filtering, bounded
+  source retention, owner/revision approval rejection, conflicting proposals,
+  duplicate claims, restart/uncertain effects, and direct Cloud Run v2 request
+  and read-back shape. Browser inspection covered intervention and empty states,
+  800px layout without horizontal overflow, reduced motion, one H1, chart text
+  alternative, and the synthetic label. Inherited paid/search routes are
+  disabled and the voice page redirects to the Control Room.
 - Blockers: personal Slack, OpenAI, and GCP capabilities and spending limits
   are not live-verified; inherited dependency exposure blocks public/live use.
-- Exact next action: finish UI-1 required states and browser checks, then
-  complete offline Slack ingress and remaining REL-1 race cases.
+- Exact next action: run milestone correctness/security reviews and a truthful
+  offline demo rehearsal. Live release remains blocked on recorded personal
+  access, spending limits, and dependency reachability.
 
 ## Invariant summary
 
@@ -75,11 +85,11 @@ may be useful but cannot make the original criterion green.
 | P0-TRANSITION | — | lead only | organizer opening + explicit maintainer scope/budget | record opening evidence, authorization, final PREP_ONLY SHA; then commit `.hackathon-phase`, TRACKER, and provenance transition before probes or product work | `bash scripts/scope-audit.sh` | `dc42655:99fb15e` | DONE_IMPL | N/A |
 | CORE-1 | P0-TRANSITION | writer A | CAP-LOCAL | exact-revision contract, trusted owner/resource binding, persistence, hold/refusal, elapsed evidence, claim, retirement and retained receipt pass deterministic tests with labeled fixtures | task-owned contract/state/persistence tests, then `bash scripts/check.sh` | `bfbcbc4:d24b0f6` | DONE_IMPL | NOT_REQUIRED |
 | COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | `bfbcbc4:d24b0f6` | DONE_IMPL | NOT_REQUIRED |
-| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `bfbcbc4:d24b0f6` | IN_PROGRESS | NOT_REQUIRED |
-| REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | — | BLOCKED_DEPS | NOT_REQUIRED |
-| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | — | BLOCKED_DEPS | ACCESS_REQUIRED |
+| UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `87fe0b8:ec7befb` | DONE_IMPL | NOT_REQUIRED |
+| REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `87fe0b8:ec7befb` | DONE_IMPL | NOT_REQUIRED |
+| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `87fe0b8:ec7befb` | DONE_IMPL | ACCESS_REQUIRED |
 | MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `bfbcbc4:d24b0f6` | DONE_IMPL | KEY_REQUIRED |
-| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | — | BLOCKED_DEPS | ACCESS_REQUIRED |
+| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `87fe0b8:ec7befb` | DONE_IMPL | ACCESS_REQUIRED |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
 
