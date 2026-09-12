@@ -5,13 +5,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-copy_working_controls() {
-  repo=$1
-  cp "$ROOT/.hackathon-phase" "$repo/.hackathon-phase"
-  cp "$ROOT/scripts/scope-audit.sh" "$repo/scripts/scope-audit.sh"
-  cp "$ROOT/docs/TRACKER.md" "$repo/docs/TRACKER.md"
-  cp "$ROOT/HACKATHON_PROVENANCE.md" "$repo/HACKATHON_PROVENANCE.md"
-}
+PREBUILD=$(awk -F= '$1 == "PREBUILD_COMMIT" { print $2 }' "$ROOT/.hackathon-phase")
+printf '%s' "$PREBUILD" | grep -Eq '^[0-9a-f]{40}$' ||
+  { echo "scope-audit test requires a recorded PREBUILD_COMMIT" >&2; exit 1; }
 
 expect_fail() {
   name=$1
@@ -23,8 +19,9 @@ expect_fail() {
 }
 
 git clone -q --local --no-hardlinks "$ROOT" "$TMP/prep"
-copy_working_controls "$TMP/prep"
 cd "$TMP/prep"
+git checkout -q "$PREBUILD"
+cp "$ROOT/scripts/scope-audit.sh" scripts/scope-audit.sh
 
 bash scripts/scope-audit.sh >/dev/null
 PHASE=BUILD_ACTIVE bash scripts/scope-audit.sh >/dev/null
@@ -68,8 +65,9 @@ printf 'PHASE=BUILD_ACTIVE\nAUTHORIZATION=UNRECORDED\nPREBUILD_COMMIT=UNRECORDED
 expect_fail "build without authorization" bash scripts/scope-audit.sh
 
 git clone -q --local --no-hardlinks "$ROOT" "$TMP/build"
-copy_working_controls "$TMP/build"
 cd "$TMP/build"
+git checkout -q "$PREBUILD"
+cp "$ROOT/scripts/scope-audit.sh" scripts/scope-audit.sh
 prebuild=$(git rev-parse HEAD)
 printf 'PHASE=BUILD_ACTIVE\nAUTHORIZATION=RECORDED\nPREBUILD_COMMIT=%s\n' "$prebuild" > .hackathon-phase
 replace_line() {

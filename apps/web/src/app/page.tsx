@@ -1,204 +1,131 @@
-"use client";
+import { loadSnapshot } from "@/lib/control-room";
 
-import { useCallback, useState, type FormEvent } from "react";
-import {
-  CopilotChat,
-  useConfigureSuggestions,
-} from "@copilotkit/react-core/v2";
-import { GenerativeUI } from "@/components/generative-ui";
-import { AppControl } from "@/components/app-control";
-import {
-  createFollowup,
-  findIncident,
-  incidents,
-  workspaceContext,
-  type Followup,
-} from "@/lib/incidents";
+const lifecycle = [
+  "Source",
+  "Proposal",
+  "Approval",
+  "Hold",
+  "Observation",
+  "Claim",
+  "Dispatch",
+  "Verification",
+  "Retirement",
+] as const;
 
-export default function Home() {
-  const [selectedId, setSelectedId] = useState<string>(incidents[0].id);
-  const [followups, setFollowups] = useState<Followup[]>([]);
-  const [title, setTitle] = useState("");
-  const [notice, setNotice] = useState("");
-  const { selectedIncident: incident, followups: visibleTasks } =
-    workspaceContext(selectedId, followups);
-  const selectIncident = useCallback((id: string) => {
-    setSelectedId(findIncident(id).id);
-    setTitle("");
-    setNotice("");
-  }, []);
-  const addFollowup = useCallback((incidentId: string, nextTitle: string) => {
-    const task = createFollowup(incidentId, nextTitle, crypto.randomUUID());
-    setFollowups((current) => [...current, task]);
-    setNotice(`Added a follow-up to ${task.incidentId}.`);
-    return task;
-  }, []);
+const reached: Record<string, number> = {
+  PROPOSED: 1,
+  ACTIVE_HOLD: 3,
+  OBSERVING: 4,
+  READY: 4,
+  DISPATCHING: 6,
+  NEEDS_INTERVENTION: 7,
+  RETIRED: 8,
+};
 
-  useConfigureSuggestions(
-    {
-      suggestions: [
-        {
-          title: "Summarize this incident",
-          message:
-            "Summarize the selected incident using the page context. What needs attention?",
-        },
-        {
-          title: "Add a follow-up",
-          message:
-            "Add one useful local follow-up for the selected incident based on its current status.",
-        },
-      ],
-      available: "before-first-message",
-    },
-    [],
-  );
+const next: Record<string, string> = {
+  PROPOSED: "Await configured owner",
+  ACTIVE_HOLD: "Observe fresh health",
+  OBSERVING: "Complete sustained window",
+  READY: "Claim exact promotion",
+  DISPATCHING: "Read target state",
+  NEEDS_INTERVENTION: "Operator resolution",
+  RETIRED: "Retain receipt",
+};
 
-  function submitFollowup(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      addFollowup(selectedId, title);
-      setTitle("");
-    } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "Unable to add follow-up.",
-      );
-    }
-  }
+export default async function Home() {
+  const snapshot = await loadSnapshot();
+  const workflow = snapshot.workflow;
+  const points = snapshot.samples.map((sample, index) => {
+    const x = snapshot.samples.length === 1 ? 320 : 24 + index * (592 / (snapshot.samples.length - 1));
+    const y = 136 - Math.min(2.2, sample.value) / 2.2 * 112;
+    return `${x},${y}`;
+  }).join(" ");
+  const elapsed = workflow?.observation?.windowStartedAt
+    ? workflow.observation.observedAt - workflow.observation.windowStartedAt
+    : 0;
 
   return (
-    <>
-      <GenerativeUI />
-      <AppControl
-        selectedId={selectedId}
-        followups={followups}
-        selectIncident={selectIncident}
-        addFollowup={addFollowup}
-      />
-      <main className="ck-workspace">
-        <header className="ck-workspace-header">
-          <div>
-            <p className="ck-eyebrow">Agents, everywhere · Web example</p>
-            <h1>Incident assistant</h1>
-            <p className="ck-intro">
-              Pick an incident. Ask your assistant. Add a follow-up.
-            </p>
-          </div>
-          <span className="ck-tag">Sample data</span>
-        </header>
-
-        <div className="ck-workspace-grid">
-          <section className="ck-panel" aria-labelledby="incident-title">
-            <div className="ck-incident-picker">
-              <label htmlFor="incident-select">Incident</label>
-              <select
-                id="incident-select"
-                value={selectedId}
-                onChange={(event) => selectIncident(event.target.value)}
-              >
-                {incidents.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.id} · {item.service}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="ck-detail">
-              <span className="ck-status-label">{incident.status}</span>
-              <h2 id="incident-title">{incident.title}</h2>
-              <p>{incident.summary}</p>
-              <details className="ck-more" key={incident.id}>
-                <summary>Details &amp; timeline</summary>
-                <dl className="ck-detail-facts">
-                  <div>
-                    <dt>Incident lead</dt>
-                    <dd>{incident.owner}</dd>
-                  </div>
-                  <div>
-                    <dt>Severity</dt>
-                    <dd>{incident.severity}</dd>
-                  </div>
-                  <div>
-                    <dt>Last update</dt>
-                    <dd>{incident.updated}</dd>
-                  </div>
-                </dl>
-                <h3>Impact</h3>
-                <p>{incident.impact}</p>
-                <h3>Timeline</h3>
-                <ol className="ck-timeline">
-                  {incident.timeline.map((event) => (
-                    <li key={event.time}>
-                      <time>{event.time} UTC</time>
-                      <div>
-                        <strong>{event.author}</strong>
-                        <p>{event.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            </div>
-
-            <section className="ck-followups" aria-labelledby="followup-title">
-              <h2 id="followup-title">Follow-ups</h2>
-              {visibleTasks.length ? (
-                <ul className="ck-task-list">
-                  {visibleTasks.map((task) => (
-                    <li key={task.id}>
-                      <span aria-hidden="true">○</span>
-                      {task.title}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="ck-empty">
-                  No follow-ups yet. Ask the assistant or add one.
-                </p>
-              )}
-              <form onSubmit={submitFollowup} className="ck-task-form">
-                <label className="ck-sr-only" htmlFor="task-title">
-                  New follow-up for {incident.id}
-                </label>
-                <input
-                  id="task-title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  maxLength={200}
-                  placeholder="Write a follow-up…"
-                  required
-                />
-                <button className="ck-btn ck-btn--primary" type="submit">
-                  Add
-                </button>
-              </form>
-              <p className="ck-local-note">
-                Saved for this session. Cleared on refresh.
-              </p>
-              <p role="status" className="ck-notice">
-                {notice}
-              </p>
-            </section>
-          </section>
-
-          <section
-            className="ck-panel ck-assistant"
-            aria-labelledby="assistant-title"
-          >
-            <header className="ck-assistant-header">
-              <h2 id="assistant-title">Ask assistant</h2>
-              <p>It can read this incident and add follow-ups.</p>
-            </header>
-            <CopilotChat
-              className="ck-chat"
-              labels={{
-                welcomeMessageText: "What needs attention?",
-                chatInputPlaceholder: "Ask about this incident…",
-              }}
-            />
-          </section>
+    <main className="cr-shell">
+      <header className="cr-header">
+        <div>
+          <p className="ck-eyebrow">Interlock · Control Room</p>
+          <h1>Checkout release constraint</h1>
+          <p className="ck-intro">Evidence for one revision-bound operational decision.</p>
         </div>
-      </main>
-    </>
+        <span className="cr-mode" data-source={snapshot.source}>
+          {snapshot.source === "synthetic" ? "TEST INPUT — SYNTHETIC" : "Coordinator data"}
+        </span>
+      </header>
+
+      {workflow ? (
+        <>
+          <section className="cr-summary" aria-labelledby="contract-title">
+            <div>
+              <p className="cr-label">Active contract</p>
+              <h2 id="contract-title">Hold {workflow.contract.candidateRevision} until checkout is healthy</h2>
+              <p className="cr-source">Source: {workflow.contract.sourceMessageRef}</p>
+            </div>
+            <dl className="cr-facts">
+              <div><dt>Resource</dt><dd>{workflow.contract.resourceId}</dd></div>
+              <div><dt>Owner / approval</dt><dd>{workflow.contract.ownerId} · r{workflow.approval?.revision ?? "—"}</dd></div>
+              <div><dt>Current state</dt><dd><strong>{workflow.status.replaceAll("_", " ")}</strong></dd></div>
+              <div><dt>Next</dt><dd>{next[workflow.status]}</dd></div>
+              <div><dt>Coordinator</dt><dd className={snapshot.coordinator.connected ? "is-good" : "is-bad"}>{snapshot.coordinator.connected ? "Connected" : "Unavailable"}</dd></div>
+              <div><dt>Slack listener</dt><dd className={snapshot.listener.connected ? "is-good" : "is-stale"}>{snapshot.listener.connected ? "Connected" : "Not connected"}</dd></div>
+            </dl>
+          </section>
+
+          <div className="cr-grid">
+            <section className="cr-card" aria-labelledby="health-title">
+              <header className="cr-card-head">
+                <div><p className="cr-label">Sustained condition</p><h2 id="health-title">Checkout health</h2></div>
+                <strong>{workflow.observation?.value.toFixed(2) ?? "—"}</strong>
+              </header>
+              <figure>
+                <svg className="cr-chart" viewBox="0 0 640 160" role="img" aria-labelledby="plot-title plot-desc">
+                  <title id="plot-title">Checkout health observations</title>
+                  <desc id="plot-desc">Values must remain at or below {workflow.contract.threshold} for {workflow.contract.windowMs / 1_000} seconds. The first sample reset the window.</desc>
+                  <line x1="24" x2="616" y1="85" y2="85" className="cr-threshold" />
+                  <polyline points={points} className="cr-line" />
+                  {snapshot.samples.map((sample, index) => {
+                    const [x, y] = points.split(" ")[index]!.split(",");
+                    return <circle key={sample.observedAt} cx={x} cy={y} r="5" className={sample.value <= workflow.contract.threshold ? "cr-point" : "cr-point cr-point--bad"} />;
+                  })}
+                </svg>
+                <figcaption>
+                  Threshold ≤ {workflow.contract.threshold} · required window {workflow.contract.windowMs / 1_000}s · elapsed {Math.floor(elapsed / 1_000)}s · {workflow.observation?.resets.length ?? 0} reset(s)
+                </figcaption>
+              </figure>
+              <p className="cr-muted">Last sample <time>{new Date(workflow.observation?.observedAt ?? snapshot.asOf).toLocaleTimeString("en-US", { timeZone: "UTC" })} UTC</time>. Monitoring gaps reset elapsed evidence.</p>
+            </section>
+
+            <section className="cr-card" aria-labelledby="lifecycle-title">
+              <p className="cr-label">Decision lifecycle</p>
+              <h2 id="lifecycle-title">What happened, and what can happen next</h2>
+              <ol className="cr-rail">
+                {lifecycle.map((label, index) => (
+                  <li key={label} data-state={index < reached[workflow.status] ? "done" : index === reached[workflow.status] ? "current" : "future"}>
+                    <span aria-hidden="true">{index < reached[workflow.status] ? "✓" : index + 1}</span>
+                    <div><strong>{label}</strong><small>{index === reached[workflow.status] ? next[workflow.status] : index < reached[workflow.status] ? "Persisted" : "Not yet authorized"}</small></div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </div>
+
+          <section className="cr-card cr-receipt" aria-labelledby="receipt-title">
+            <div><p className="cr-label">Expected versus observed</p><h2 id="receipt-title">Verification receipt</h2></div>
+            <dl className="cr-facts cr-facts--receipt">
+              <div><dt>Expected revision</dt><dd>{workflow.contract.candidateRevision}</dd></div>
+              <div><dt>Observed revision</dt><dd>{workflow.receipt?.observedRevision ?? "Pending"}</dd></div>
+              <div><dt>Effective routing</dt><dd>{workflow.receipt ? `${workflow.receipt.trafficPercent}%` : "Pending"}</dd></div>
+              <div><dt>Operation</dt><dd><code>{workflow.operation?.id ?? "Not claimed"}</code></dd></div>
+            </dl>
+          </section>
+        </>
+      ) : (
+        <section className="cr-card"><h2>No active contract</h2><p>The coordinator is connected and has no unresolved workflow.</p></section>
+      )}
+    </main>
   );
 }

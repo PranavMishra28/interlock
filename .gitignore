@@ -26,3 +26,4 @@ gha-creds-*.json
 .playwright/
 playwright-report/
 test-results/
+.interlock/
