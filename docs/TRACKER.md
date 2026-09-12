@@ -10,9 +10,13 @@ before compaction.
 
 ## Checkpoint
 
-- Inspected base: `main` at PR #7 merge
-  `cc4e89ec43ee29754810c8afda9464448f2dc8e5`.
-- Working branch: `main`, direct-push cleanup authorized by the maintainer.
+- Inspected base: `main` at PR #10 merge
+  `caf6e75`, which landed `ship-now`.
+- Working branch: `main`. Post-merge work is authorized to go straight to
+  `main`, but `main` rejects a direct push: protection requires the `verify`
+  check and `ci.yml` runs it only on `main` pushes and pull requests, so each
+  change still lands through a short-lived branch and merge. Do not weaken the
+  check or the protection to avoid that step.
 - Last checkpoint: 2026-09-12 economical model and managed-channel
   configuration. The configured personal OpenAI project exposes the pinned
   `gpt-5.4-mini-2026-03-17` snapshot; runtime fallback, preflight, and
@@ -366,6 +370,25 @@ before compaction.
   Targeted gates: 61 root, 44 web, and the walkthrough preflight plus its test.
   Full `bash scripts/check.sh` then passed on this clean tree. This pass made no
   Cloud Run mutation, posted no Slack message, and changed no live column.
+- One-command demo merge 2026-09-12: a direct `git push origin main` was
+  rejected with `GH006 ... Required status check "verify" is expected`, so the
+  single-command work went through PR
+  [#9](https://github.com/PranavMishra28/interlock/pull/9) `Make the local demo
+  one command`. `verify` passed in 1m20s, the PR merged at 22:50:09Z as
+  `b36e74c3c12d564b5299361a94ef73be2d9cc31d`, and the subsequent `main` push
+  workflow also concluded success. Protection was not weakened. The deleted
+  branch step was refused by repository policy, so `demo-one-command` remains.
+- Brand mark checkpoint at clean committed
+  `d83b3d17b1451f73b9d2b06f52c84743c00f9d79:9ed688e89fc73b4137d985758a6716ffc0f4561d`,
+  the `ship-now` head that PR
+  [#10](https://github.com/PranavMishra28/interlock/pull/10) then merged into
+  `main` as `caf6e75`. `d83b3d1` flattens `apps/web/src/app/icon.svg`
+  only; it is a 490-byte balanced SVG that keeps its `viewBox` and
+  `aria-label`. Recorded evidence had gone stale when that commit moved HEAD,
+  and a concurrent `bash scripts/check.sh` run had already re-recorded this
+  exact identity, so this pass verified the binding instead of duplicating the
+  gate. Targeted re-checks: web typecheck clean and 44 web tests passed. No
+  Cloud Run mutation, no Slack message, and no live-column change.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
   post or approve a live Slack decision and therefore did not rehearse the
