@@ -39,6 +39,10 @@ case "$phase" in
     # product code hide inside an allowlisted directory.
     ALLOW=(
       .hackathon-phase
+      .cursor/hooks.json
+      .cursor/hooks/before-shell.sh
+      .cursor/hooks/context.sh
+      .cursor/hooks/stop.sh
       .github/dependabot.yml
       .github/workflows/ci.yml
       .gitignore
@@ -49,6 +53,9 @@ case "$phase" in
       SUBMISSION.md
       HACKATHON_PROVENANCE.md
       scripts/check.sh
+      scripts/check-evidence.sh
+      scripts/docs-links.test.mjs
+      scripts/hooks.test.sh
       scripts/scope-audit.sh
       scripts/scope-audit.test.sh
     )
