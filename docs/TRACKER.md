@@ -95,8 +95,14 @@ before compaction.
   button. SLACK-1 and CLOUD-1 `DONE_IMPL` therefore overstate the process; the
   library functions pass their own tests but are not wired into the long-lived
   process.
-- Blockers: dedicated personal GCP project still missing (`prod-457713` is
-  not usable). Slack channel install missing. OpenAI budget unrecorded.
+- Live GCP evidence: dedicated personal project `interlock-508417` provisioned
+  in `us-central1` inside the $0 Always Free envelope, isolated in the named
+  gcloud configuration `interlock`. `checkout-v41` serves 100%; candidate
+  `checkout-v42` exists at 0% traffic. `GET /health` returns the exact
+  `{value, observedAt}` contract the adapter requires; an unauthenticated
+  `POST /fault` is refused with 403 while a tokened call genuinely degrades
+  health to 0.9 and recovers to 0.1. The teardown ledger is in READINESS.
+- Blockers: Slack channel install missing. OpenAI budget unrecorded.
   Coordinator process does not yet observe/enforce/continue. Approval cards
   do not survive listener restart. Inherited dependency exposure still blocks
   public hosting.
@@ -123,7 +129,7 @@ normative wording.
 | CAP-HARNESS | Project hooks and resume path | OFFLINE_READY | hook fixtures pass; current IDE shell hook observed; fresh-session context check pending |
 | CAP-SLACK | Personal Slack workspace/app and ambient channel delivery | ACCESS_REQUIRED | owner installs after P0; new unmentioned top-level + reply test |
 | CAP-MODEL | Personal OpenAI project/key and agreed API budget | KEY_REQUIRED | one bounded post-P0 behavior/cost check |
-| CAP-GCP | Dedicated personal GCP project, budget, target and execution identity | ACCESS_REQUIRED | $0 Always Free recorded; dedicated project + named config still required |
+| CAP-GCP | Dedicated personal GCP project, budget, target and execution identity | LIVE_VERIFIED | `interlock-508417`/`us-central1`; `checkout-v41` serving 100%, `checkout-v42` at 0%; health 0.1/0.9/0.1 observed; unauthenticated fault refused 403 |
 
 Statuses: `OFFLINE_READY`, `KEY_REQUIRED`, `ACCESS_REQUIRED`,
 `LIVE_VERIFIED`, `DEFERRED`.

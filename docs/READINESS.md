@@ -110,6 +110,33 @@ than a key; scope update/read to that service; record teardown. Never use
 employer gcloud/ADC, never point Interlock at `prod-457713`, and never expose
 an unauthenticated endpoint.
 
+Provisioned 2026-09-12 inside the recorded envelope, personal account
+`mishrapranav82@gmail.com`, named gcloud configuration `interlock`:
+
+| Resource | Value |
+|---|---|
+| Project | `interlock-508417` (billing enabled, personal billing account `interlock`) |
+| Region | `us-central1` (Tier 1 / free-tier region) |
+| Service | `checkout`, request-based billing, `min-instances=0`, 1 vCPU, 256 MiB, max 2 instances |
+| Production revision | `checkout-v41`, serving 100% |
+| Candidate revision | `checkout-v42`, created with `--no-traffic`, serving 0% |
+| Health signal | `GET /health` → `{value, observedAt, revision}`, unauthenticated by necessity (the adapter reads it without a bearer token) and exposing only a health number |
+| Fault switch | `POST /fault?state=on|off`, requires `CHECKOUT_FAULT_TOKEN`; returns 403 without it |
+| APIs enabled | `run`, `cloudbuild`, `artifactregistry`, `cloudresourcemanager` |
+
+Observed live: healthy `0.1`, faulted `0.9`, recovered `0.1`; unauthenticated
+fault attempt refused with 403. Scale-to-zero means the service bills nothing
+while idle.
+
+**Teardown ledger.** Run after the event:
+
+```bash
+gcloud run services delete checkout --project interlock-508417 --region us-central1
+gcloud artifacts repositories delete cloud-run-source-deploy \
+  --project interlock-508417 --location us-central1
+gcloud config configurations delete interlock
+```
+
 Recorded Cloud Run Always Free envelope (per billing account, monthly,
 [Cloud Run pricing](https://cloud.google.com/run/pricing) request-based /
 [Free Program](https://docs.cloud.google.com/free/docs/free-cloud-features)):
