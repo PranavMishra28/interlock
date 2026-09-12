@@ -6,6 +6,8 @@
   --text: #010507;
   --muted: #57575b;
   --accent: #010507;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   color-scheme: light;
 }
 * {
@@ -15,9 +17,10 @@ body {
   margin: 0;
   background: var(--ground);
   color: var(--text);
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
 }
 button,
 input,
@@ -38,8 +41,9 @@ summary:focus-visible {
 }
 code,
 time {
-  font-family: "Spline Sans Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 h1,
 h2,
@@ -358,7 +362,7 @@ p {
   margin: 0.6rem 0 0;
 }
 .ck-facts dt {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -388,7 +392,7 @@ p {
   border-bottom: 1px solid var(--border);
 }
 .ck-card th {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.65rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -430,7 +434,7 @@ p {
 
 .ck-status {
   align-self: center;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -443,7 +447,7 @@ p {
   color: var(--accent);
 }
 .ck-transcript {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   line-height: 1.8;
   background: var(--surface);
@@ -471,8 +475,9 @@ p {
     radial-gradient(circle at 50% -30%, #fff 0, transparent 48%),
     var(--ground);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 .app-bar {
   position: sticky;
@@ -507,6 +512,7 @@ p {
 .app-brand strong {
   font-size: 14px;
   line-height: 1.15;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .app-brand small {
@@ -565,7 +571,7 @@ p {
   background: #fff8e8;
   color: #704408;
   border-radius: 999px;
-  font: 650 10px/1.2 ui-monospace, "SFMono-Regular", monospace;
+  font: 600 10px/1.2 var(--font-mono);
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
@@ -613,7 +619,7 @@ p {
 .cr-label {
   margin: 0 0 7px;
   color: var(--muted);
-  font: 650 10px/1.3 ui-monospace, "SFMono-Regular", monospace;
+  font: 600 10px/1.3 var(--font-mono);
   letter-spacing: 0.11em;
   text-transform: uppercase;
 }
@@ -635,7 +641,7 @@ p {
   border-radius: 6px;
   background: rgba(20, 103, 217, 0.07);
   color: #0d55b8;
-  font: 650 9px/1.2 ui-monospace, "SFMono-Regular", monospace;
+  font: 600 9px/1.2 var(--font-mono);
   letter-spacing: 0.06em;
 }
 .cr-state[data-status="NEEDS_INTERVENTION"] {
@@ -664,6 +670,7 @@ p {
 .cr-facts dd {
   margin: 3px 0 0;
   overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
 }
 .is-good { color: var(--good); }
 .is-stale { color: var(--warning); }
@@ -678,7 +685,8 @@ p {
   padding: 26px 28px;
 }
 .cr-card-head strong {
-  font: 600 30px/1 ui-monospace, "SFMono-Regular", monospace;
+  font: 600 30px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
 }
 .cr-card figure {
@@ -758,7 +766,7 @@ p {
   border-radius: 50%;
   background: white;
   color: var(--muted);
-  font: 600 10px/1 "Spline Sans Mono", monospace;
+  font: 600 10px/1 var(--font-mono);
 }
 .cr-rail li[data-state="done"] > span {
   background: #effaf5;
@@ -783,18 +791,38 @@ p {
   grid-template-columns: repeat(4, minmax(110px, 1fr));
   width: min(720px, 70%);
 }
-.cr-loading {
+.cr-placeholder {
+  color: transparent;
+}
+.cr-loading-summary {
+  min-height: 154px;
+}
+.cr-loading-grid .cr-card {
+  min-height: 570px;
+}
+.cr-loading-receipt {
+  min-height: 126px;
+}
+.cr-skeleton {
   display: grid;
   gap: 14px;
+  width: 100%;
 }
-.cr-loading span {
+.cr-skeleton span {
+  display: block;
   height: 16px;
   border-radius: 5px;
   background: #e9e9ed;
 }
-.cr-loading span:nth-child(1) { width: 34%; }
-.cr-loading span:nth-child(2) { width: 76%; }
-.cr-loading span:nth-child(3) { width: 54%; }
+.cr-skeleton span:nth-child(1) { width: 34%; }
+.cr-skeleton span:nth-child(2) { width: 76%; }
+.cr-skeleton span:nth-child(3) { width: 54%; }
+.cr-skeleton .cr-skeleton-block {
+  width: 100%;
+  height: 180px;
+  margin-top: 18px;
+  border-radius: 14px;
+}
 @media (max-width: 900px) {
   .cr-summary,
   .cr-receipt {
@@ -820,6 +848,8 @@ p {
   .cr-card { padding: 20px; }
   .cr-facts,
   .cr-facts--receipt { grid-template-columns: 1fr 1fr; }
+  .cr-loading-summary,
+  .cr-loading-receipt { min-height: 180px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
