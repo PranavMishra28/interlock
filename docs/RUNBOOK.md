@@ -198,6 +198,20 @@ and is not submission evidence. If preflight fails, stop. The private test and
 recording use the ordered flow below unchanged; recording adds screen capture
 only.
 
+The notes file is intentionally blank and is not the operator guide. Keep this
+section open and use these surfaces:
+
+- **Terminal A:** authority, enforcement, recovery, and closure beats from the
+  synthetic coordinator or live coordinator.
+- **Terminal B:** the Control Room dev server.
+- **Control Room (`http://localhost:3100`):** lifecycle, observations, resets,
+  target read-back, and retained receipt.
+- **Slack:** only the live path's ordinary unmentioned message and exact-owner
+  approval. The synthetic path never uses Slack.
+
+The current Control Room has no `?fixture=` selector. Do not invent one; use the
+synthetic coordinator command below for labeled fixture data.
+
 ### 0. Confidentiality and recording boundary
 
 Before sharing or recording a screen, close `.env`, terminal history, browser
