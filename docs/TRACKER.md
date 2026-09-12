@@ -110,6 +110,35 @@ before compaction.
   button. SLACK-1 and CLOUD-1 `DONE_IMPL` therefore overstate the process; the
   library functions pass their own tests but are not wired into the long-lived
   process.
+- Live-gap repair at `a78ea06`: a supervisor now drives the hold from the
+  long-lived coordinator process. It reads the target, records the sample, and
+  continues once the window elapses, refusing overlapping ticks so one workflow
+  cannot be claimed twice. `start()` constructs `CloudRunAdapter` from the
+  environment, `/v1/promote` exposes the refusal surface, and Google tokens come
+  from Application Default Credentials with `quota_project_id` ignored so quota
+  attributes to the project owning the service. Slack approvals are posted with
+  `postRegisteredComponent`, so a listener restart re-renders the card and
+  rebuilds its handler; a runtime without that capability is refused rather than
+  silently downgraded.
+- Clock calibration: measured against the live target, the Cloud Run container's
+  clock runs up to +117ms ahead of the workstation. The domain treated any
+  future-dated sample as an untrustworthy clock, so roughly every other live
+  sample reset the window and a healthy hold could never close. `observe` and
+  `verify` now allow a bounded 2s skew, deliberately as a module constant rather
+  than a contract field, so no proposer can widen the tolerance that decides
+  whether a target's clock is trusted.
+- CLOUD-1 live evidence 2026-09-12 against `checkout` in `interlock-508417`
+  (`us-central1`), driven by `apps/web/src/server/live-check.ts`:
+  - Refusal: starting from `checkout-v41` at 100% with the health endpoint
+    faulted to 0.9 against a 0.5 threshold, the hold recorded 25 resets across
+    ~35s and traffic never moved.
+  - Recovery and closure: after the fault was cleared the window opened, held
+    16s clean, claimed exactly one operation, promoted, and the independent
+    read-back returned expected `checkout-v42`, observed `checkout-v42`, routing
+    100%, health 0.1.
+  - A prior clean run closed a 14.9s window with 0 resets. The fault switch
+    refuses an unauthenticated caller with 403. The target was reset to
+    `checkout-v41` afterwards, so the demonstration is repeatable.
 - Live GCP evidence: dedicated personal project `interlock-508417` provisioned
   in `us-central1` inside the $0 Always Free envelope, isolated in the named
   gcloud configuration `interlock`. `checkout-v41` serves 100%; candidate
@@ -123,9 +152,9 @@ before compaction.
   Coordinator process does not yet observe/enforce/continue. Approval cards
   do not survive listener restart. Inherited dependency exposure still blocks
   public hosting.
-- Exact next action: wire the coordinator observe/refuse/continue loop and the
-  restart-safe registered approval component offline, then re-run the targeted
-  tests and the full check; wait for a dedicated personal `us-central1` project
+- Superseded next action: wire the coordinator observe/refuse/continue loop and
+  the restart-safe registered approval component offline, then re-run the
+  targeted tests and the full check; wait for a personal `us-central1` project
   the Gmail identity can describe before any live GCP step.
 
 ## Invariant summary
@@ -165,9 +194,9 @@ may be useful but cannot make the original criterion green.
 | COORD-1 | CORE-1 | writer A | CAP-LOCAL | one long-lived coordinator owns SQLite; second-owner/restart/gap behavior and loopback API are proved; browser never opens DB | coordinator integration and restart tests | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
 | UI-1 | CORE-1 | writer B | CAP-LOCAL | DESIGN Control Room renders real API data or visibly labeled fixtures; accessibility, stale/error/empty/gap/failure states pass browser and visual review | web tests/build, then bounded Playwright/visual checks | `ca2dc7c:c556474499785fda6be83ac2a1d01f2d6d469a74` | DONE_IMPL | NOT_REQUIRED |
 | REL-1 | COORD-1 | writer A | CAP-LOCAL | flapping/stale/restart resets, revision races, duplicate claims, uncertain dispatch reconciliation and wrong-revision failure remain fail-closed | reliability tests and one process-restart run | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | NOT_REQUIRED |
-| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | IN_PROGRESS (ingress/authority pass; restart cannot rebuild the approval button) | ACCESS_REQUIRED |
+| SLACK-1 | CORE-1, COORD-1 | writer A, not concurrent with shared contract edits | CAP-SLACK only for live column | one authorized channel accepts a new unmentioned top-level event and unmentioned reply; preserves provenance/edits; suppresses duplicates/bots; persists owner binding so restart rebuilds it; routes explicit revision button to configured owner and rejects other actors | Slack unit tests; one bounded live capability script/runbook check | `a78ea06` | DONE_IMPL (restart-safe registered approval) | ACCESS_REQUIRED |
 | MODEL-1 | CORE-1 | writer A | CAP-MODEL only for live column | bounded attributed context yields proposal or abstention; negation, ambiguity, unsupported condition, injection and context-removal cases fail safely; model has no write authority | deterministic eval set; one bounded live model check | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | DONE_IMPL | BLOCKED_DEPS |
-| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `e4f6454:3f10b5e8f19e1d88f22249c363dd06b486eb6477` | IN_PROGRESS (adapter contract passes; process never constructs it, never refuses a real attempt, never continues) | ACCESS_REQUIRED |
+| CLOUD-1 | COORD-1 | writer A | CAP-GCP only for live column | real adapter refuses held promotion; persists identity before dispatch; reconciles uncertainty; promotes only approved event-created revision; reads revision/routing/fresh health back | adapter contract tests; one bounded personal-target smoke | `a78ea06` | DONE_IMPL | LIVE_VERIFIED |
 | RELEASE-1 | UI-1, REL-1, SLACK-1, MODEL-1, CLOUD-1 | lead | CAP-SLACK + CAP-MODEL + CAP-GCP LIVE_VERIFIED | end-to-end ambient decision → owner approval → refused operation → reset/recovery → one continuation → target receipt; dependency/security gate cleared | progressive gates in RUNBOOK, then `bash scripts/check.sh` | — | BLOCKED_DEPS | BLOCKED_DEPS |
 | DEMO-1 | RELEASE-1 | lead | portal deadline confirmed | ≤120-second truthful rehearsal; shortened/synthetic/local behavior labeled; clean-clone, secrets, provenance, reset and cleanup checks pass; publication remains human-only | RUNBOOK demo/submission gate | — | BLOCKED_DEPS | BLOCKED_DEPS |
 
