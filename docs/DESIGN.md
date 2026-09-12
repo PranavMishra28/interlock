@@ -1,8 +1,8 @@
 # Control Room design brief
 
-Status: prose-only PREP_ONLY requirement. Slack is the conversation and
-exact-revision approval surface. The Next.js Control Room is evidence; it is
-not a Slack imitation, a chat panel, or a source of operator authority.
+Status: BUILD_ACTIVE requirement. Slack is the conversation and exact-revision
+approval surface. The Next.js Control Room is evidence; it is not a Slack
+imitation, a chat panel, or a source of operator authority.
 
 ## Decision
 

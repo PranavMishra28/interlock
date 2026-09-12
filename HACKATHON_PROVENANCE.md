@@ -6,15 +6,15 @@ its core functionality built during the event; templates, libraries, prompts,
 and starter code may be reused if the team identifies inherited vs event-built
 work. This file is that identification. It is kept current across the event.
 
-## Status: PREP_ONLY
+## Status: BUILD_ACTIVE
 
-Build authorization: UNRECORDED
-Final pre-build commit: UNRECORDED
+Build authorization: RECORDED
+Final pre-build commit: `88b6309b071978fb2ec585b683392a11d5283358`
 
-Nothing in this repository implements Interlock. Everything here is either
-verbatim inherited starter code or generic repository bootstrap (CI, docs,
-audit script). Implementation begins only after the official build period
-opens and a separate instruction is given.
+The maintainer confirmed the official opening and authorized BUILD_ACTIVE at
+2026-09-12 10:21 PDT. The immutable pre-build boundary above contains no
+Interlock implementation. Event work is recorded below from the transition
+commit onward.
 
 ## Inherited: CopilotKit starter kit
 
@@ -115,7 +115,7 @@ commit—not a timestamp and not the old tag alone—is the event boundary.
 
 | Commit range | What was built | Inherited pieces it depends on |
 |---|---|---|
-| _empty until BUILD_ACTIVE_ | | |
+| P0 transition (commit pending) | recorded official opening, maintainer authorization, and immutable final PREP_ONLY boundary; no product behavior | phase guard and preparation documents |
 
 The event boundary is the `PREBUILD_COMMIT` recorded by the committed P0 phase
 transition. `scripts/scope-audit.sh` reports every path changed after it.

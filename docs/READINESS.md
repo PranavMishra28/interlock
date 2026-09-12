@@ -1,7 +1,7 @@
 # Interlock readiness
 
-Status: PREP_ONLY. Offline starter checks are not evidence that Interlock or a
-live integration works.
+Status: BUILD_ACTIVE. Offline checks are not evidence that Interlock or a live
+integration works.
 
 Status vocabulary: `OFFLINE_READY`, `KEY_REQUIRED`, `ACCESS_REQUIRED`,
 `LIVE_VERIFIED`, `DEFERRED`.
@@ -177,8 +177,8 @@ them from the baseline evidence above.
 
 1. The handbook permits reusable building blocks but does not expressly
    authorize every custom pre-event integration. No custom integration is made.
-2. Official build authority still requires both organizer opening and explicit
-   maintainer authorization; the portal deadline must be checked live.
+2. Official opening and explicit maintainer authorization were recorded at the
+   P0 transition; the portal deadline must still be checked before submission.
 3. Personal OpenAI credits/budget, personal Slack setup, and personal GCP
    project/budget are not live-verified.
 4. Dependency reachability/remediation must be resolved before live traffic.
