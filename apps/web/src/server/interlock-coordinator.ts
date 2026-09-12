@@ -7,6 +7,7 @@ import {
   observe,
   promotionAllowed,
   resetObservation,
+  VERIFICATION_PROPAGATION_DEADLINE_MS,
   verify,
   type Contract,
   type TrustedResource,
@@ -26,10 +27,15 @@ export type TargetAdapter = {
   read(): Promise<TargetObservation>;
 };
 
+const VERIFICATION_POLL_INTERVAL_MS = 1_000;
+
 export class InterlockCoordinator {
   constructor(
     readonly store: InterlockStore,
     readonly trusted: TrustedResource,
+    private readonly clock: () => number = Date.now,
+    private readonly pause: (ms: number) => Promise<void> =
+      (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   ) {}
 
   propose(contract: Contract, now = Date.now()) {
@@ -113,20 +119,10 @@ export class InterlockCoordinator {
     } catch {
       workflow = markDispatchUncertain(workflow);
       this.store.save(workflow, now);
-      return this.reconcile(id, adapter);
+      return this.verifyUntilSettled(workflow, adapter);
     }
 
-    let observed: TargetObservation;
-    try {
-      observed = await adapter.read();
-    } catch {
-      workflow = markDispatchUncertain(workflow);
-      this.store.save(workflow);
-      return workflow;
-    }
-    workflow = verify(workflow, observed, Date.now());
-    this.store.save(workflow);
-    return workflow;
+    return this.verifyUntilSettled(workflow, adapter);
   }
 
   async reconcile(id: string, adapter: TargetAdapter) {
@@ -137,15 +133,40 @@ export class InterlockCoordinator {
     ) {
       throw new Error("Only an unresolved dispatch can be reconciled.");
     }
-    let observed: TargetObservation;
-    try {
-      observed = await adapter.read();
-    } catch {
-      return workflow;
+    return this.verifyUntilSettled(workflow, adapter);
+  }
+
+  private async verifyUntilSettled(
+    initial: Workflow,
+    adapter: TargetAdapter,
+  ) {
+    const deadline = this.clock() + VERIFICATION_PROPAGATION_DEADLINE_MS;
+    let workflow = initial;
+    while (true) {
+      let observed: TargetObservation | undefined;
+      try {
+        observed = await adapter.read();
+      } catch {
+        if (workflow.status === "DISPATCHING") {
+          workflow = markDispatchUncertain(workflow);
+          this.store.save(workflow, this.clock());
+        }
+      }
+      if (observed) {
+        const now = this.clock();
+        if (now <= deadline) {
+          workflow = verify(workflow, observed, now);
+          this.store.save(workflow, now);
+          if (workflow.status === "RETIRED") return workflow;
+        } else if (workflow.status === "DISPATCHING") {
+          workflow = markDispatchUncertain(workflow);
+          this.store.save(workflow, now);
+        }
+      }
+      const remaining = deadline - this.clock();
+      if (remaining <= 0) return workflow;
+      await this.pause(Math.min(VERIFICATION_POLL_INTERVAL_MS, remaining));
     }
-    const reconciled = verify(workflow, observed, Date.now());
-    this.store.save(reconciled);
-    return reconciled;
   }
 
   private required(id: string): Workflow {

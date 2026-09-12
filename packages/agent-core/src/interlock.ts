@@ -74,6 +74,7 @@ export type Workflow = {
     observedRevision: string;
     trafficPercent: number;
     healthValue: number;
+    observedAt?: number;
     verifiedAt: number;
   };
 };
@@ -91,6 +92,17 @@ export type Workflow = {
  * genuinely wrong clock is wrong by minutes, not by this margin.
  */
 export const MAX_CLOCK_SKEW_MS = 2_000;
+
+/**
+ * The live Cloud Run target returned its pre-promotion traffic immediately
+ * after the update operation completed, while a later independent read showed
+ * the new route effective. Give routing propagation the same finite 20-second
+ * envelope as update completion, with repeated fresh reads inside it.
+ *
+ * This is real-target calibration, not proposal policy, so it deliberately
+ * cannot be widened through a contract.
+ */
+export const VERIFICATION_PROPAGATION_DEADLINE_MS = 20_000;
 
 export class InterlockError extends Error {
   constructor(
@@ -313,6 +325,7 @@ export function verify(
       observedRevision: observed.revision,
       trafficPercent: observed.trafficPercent,
       healthValue: observed.healthValue,
+      observedAt: observed.observedAt,
       verifiedAt: now,
     },
   };

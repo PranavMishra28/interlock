@@ -169,6 +169,7 @@ test("claim is single-use, revalidates trust, and verifies the exact target", ()
   );
   assert.equal(retired.status, "RETIRED");
   assert.equal(retired.receipt?.operationId, "op-1");
+  assert.equal(retired.receipt?.observedAt, 2_025);
   assert.equal(promotionAllowed(retired), true);
 });
 

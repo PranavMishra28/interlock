@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   claim,
+  VERIFICATION_PROPAGATION_DEADLINE_MS,
   type Contract,
   type TrustedResource,
 } from "agent-core/interlock";
@@ -22,11 +23,29 @@ const trusted: TrustedResource = {
   ownerId: "U-OWNER",
 };
 
-function setup() {
+function verificationRuntime() {
+  let current = Date.now();
+  return {
+    clock: () => current,
+    advance(ms: number) {
+      current += ms;
+    },
+    async pause(ms: number) {
+      current += ms;
+    },
+  };
+}
+
+function setup(runtime?: ReturnType<typeof verificationRuntime>) {
   const dir = mkdtempSync(join(tmpdir(), "interlock-flow-"));
   const store = new InterlockStore(join(dir, "state.db"));
-  const coordinator = new InterlockCoordinator(store, trusted);
-  const base = Date.now();
+  const coordinator = new InterlockCoordinator(
+    store,
+    trusted,
+    runtime?.clock,
+    runtime?.pause,
+  );
+  const base = runtime?.clock() ?? Date.now();
   const contract: Contract = {
     id: "hold-42",
     revision: 4,
@@ -101,6 +120,113 @@ test("integrated hold refuses promotion, then claims once and retains receipt", 
   }
 });
 
+test("verification waits for Cloud Run routing propagation without promoting twice", async () => {
+  const runtime = verificationRuntime();
+  const fixture = setup(runtime);
+  try {
+    ready(fixture.coordinator, fixture.contract, fixture.base);
+    runtime.advance(1_120);
+    let promotions = 0;
+    let reads = 0;
+    let verificationObservedAt = 0;
+    const retired = await fixture.coordinator.continue(
+      fixture.contract.id,
+      {
+        async promote() {
+          promotions += 1;
+        },
+        async read() {
+          reads += 1;
+          verificationObservedAt = runtime.clock();
+          return {
+            revision: reads === 1 ? "v41" : "v42",
+            trafficPercent: 100,
+            healthValue: 0.2,
+            observedAt: verificationObservedAt,
+          };
+        },
+      },
+      fixture.base + 1_120,
+    );
+
+    assert.equal(retired.status, "RETIRED");
+    assert.equal(promotions, 1);
+    assert.equal(reads, 2);
+    assert.equal(retired.receipt?.observedAt, verificationObservedAt);
+  } finally {
+    fixture.close();
+  }
+});
+
+test("verification deadline leaves a never-converging target in intervention", async () => {
+  const runtime = verificationRuntime();
+  const fixture = setup(runtime);
+  try {
+    ready(fixture.coordinator, fixture.contract, fixture.base);
+    runtime.advance(1_120);
+    let promotions = 0;
+    let reads = 0;
+    const failed = await fixture.coordinator.continue(
+      fixture.contract.id,
+      {
+        async promote() {
+          promotions += 1;
+        },
+        async read() {
+          reads += 1;
+          return {
+            revision: "v41",
+            trafficPercent: 100,
+            healthValue: 0.2,
+            observedAt: runtime.clock(),
+          };
+        },
+      },
+      fixture.base + 1_120,
+    );
+
+    assert.equal(failed.status, "NEEDS_INTERVENTION");
+    assert.equal(failed.receipt, undefined);
+    assert.equal(failed.verification?.observedRevision, "v41");
+    assert.equal(promotions, 1);
+    assert.equal(reads, VERIFICATION_PROPAGATION_DEADLINE_MS / 1_000 + 1);
+  } finally {
+    fixture.close();
+  }
+});
+
+test("verification never accepts a stale expected-revision sample", async () => {
+  const runtime = verificationRuntime();
+  const fixture = setup(runtime);
+  try {
+    ready(fixture.coordinator, fixture.contract, fixture.base);
+    runtime.advance(1_120);
+    const staleObservedAt =
+      runtime.clock() - fixture.contract.maxSampleAgeMs - 1;
+    const failed = await fixture.coordinator.continue(
+      fixture.contract.id,
+      {
+        async promote() {},
+        async read() {
+          return {
+            revision: "v42",
+            trafficPercent: 100,
+            healthValue: 0.2,
+            observedAt: staleObservedAt,
+          };
+        },
+      },
+      fixture.base + 1_120,
+    );
+
+    assert.equal(failed.status, "NEEDS_INTERVENTION");
+    assert.equal(failed.receipt, undefined);
+    assert.equal(failed.verification?.observedAt, staleObservedAt);
+  } finally {
+    fixture.close();
+  }
+});
+
 test("uncertain applied effect reconciles by read-back without repeating", async () => {
   const fixture = setup();
   try {
@@ -134,9 +260,11 @@ test("uncertain applied effect reconciles by read-back without repeating", async
 });
 
 test("uncertain non-effect remains intervention and is never dispatched twice", async () => {
-  const fixture = setup();
+  const runtime = verificationRuntime();
+  const fixture = setup(runtime);
   try {
     ready(fixture.coordinator, fixture.contract, fixture.base);
+    runtime.advance(1_120);
     let promotions = 0;
     const adapter: TargetAdapter = {
       async promote() {
@@ -148,7 +276,7 @@ test("uncertain non-effect remains intervention and is never dispatched twice", 
           revision: "v41",
           trafficPercent: 100,
           healthValue: 0.2,
-          observedAt: Date.now(),
+          observedAt: runtime.clock(),
         };
       },
     };
