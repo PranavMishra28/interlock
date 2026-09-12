@@ -2,6 +2,7 @@ import type {
   TargetAdapter,
   TargetObservation,
 } from "./interlock-coordinator";
+import { isIP } from "node:net";
 
 type CloudRunConfig = {
   project: string;
@@ -10,6 +11,49 @@ type CloudRunConfig = {
   revision: string;
   healthUrl: string;
 };
+
+function boundedConfig(config: CloudRunConfig) {
+  for (const [name, value] of Object.entries(config)) {
+    if (name !== "healthUrl" && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value)) {
+      throw new Error(`Cloud Run ${name} is not a safe resource identifier.`);
+    }
+  }
+  const health = new URL(config.healthUrl);
+  if (
+    health.protocol !== "https:" ||
+    health.username ||
+    health.password ||
+    health.hash ||
+    health.hostname === "localhost" ||
+    health.hostname.endsWith(".local") ||
+    isIP(health.hostname.replace(/^\[|\]$/g, "")) !== 0 ||
+    /^(?:127\.|10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(health.hostname)
+  ) {
+    throw new Error("Cloud Run health URL must be an exact public HTTPS URL.");
+  }
+}
+
+async function boundedJson(response: Response, limit = 64_000) {
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > limit) {
+    throw new Error("Cloud Run response exceeds the size limit.");
+  }
+  if (!response.body) throw new Error("Cloud Run response body is missing.");
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > limit) {
+      await reader.cancel();
+      throw new Error("Cloud Run response exceeds the size limit.");
+    }
+    chunks.push(value);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+}
 
 export class CloudRunAdapter implements TargetAdapter {
   readonly serviceName: string;
@@ -21,6 +65,7 @@ export class CloudRunAdapter implements TargetAdapter {
     readonly pause: (ms: number) => Promise<void> =
       (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   ) {
+    boundedConfig(config);
     this.serviceName =
       `projects/${config.project}/locations/${config.region}/services/${config.service}`;
   }
@@ -46,19 +91,32 @@ export class CloudRunAdapter implements TargetAdapter {
             percent: 100,
           }],
         }),
+        signal: AbortSignal.timeout(5_000),
       },
     );
     if (!response.ok) throw new Error(`Cloud Run update failed (${response.status}).`);
-    const operation = await response.json() as { name?: string };
-    if (!operation.name) throw new Error("Cloud Run update returned no operation name.");
+    const operation = await boundedJson(response) as { name?: string };
+    const operationPrefix =
+      `projects/${this.config.project}/locations/${this.config.region}/operations/`;
+    const operationId = operation.name?.slice(operationPrefix.length);
+    if (
+      !operation.name?.startsWith(operationPrefix) ||
+      !operationId ||
+      !/^[A-Za-z0-9-]+$/.test(operationId)
+    ) {
+      throw new Error("Cloud Run update returned an unexpected operation name.");
+    }
 
     for (let attempt = 0; attempt < 20; attempt += 1) {
       const result = await this.request(
         `https://run.googleapis.com/v2/${operation.name}`,
-        { headers: { authorization: `Bearer ${token}` } },
+        {
+          headers: { authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(5_000),
+        },
       );
       if (!result.ok) throw new Error(`Cloud Run operation read failed (${result.status}).`);
-      const state = await result.json() as {
+      const state = await boundedJson(result) as {
         done?: boolean;
         error?: { message?: string };
       };
@@ -74,16 +132,21 @@ export class CloudRunAdapter implements TargetAdapter {
     const [serviceResponse, healthResponse] = await Promise.all([
       this.request(`https://run.googleapis.com/v2/${this.serviceName}`, {
         headers: { authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(5_000),
       }),
-      this.request(this.config.healthUrl, { cache: "no-store" }),
+      this.request(this.config.healthUrl, {
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(5_000),
+      }),
     ]);
     if (!serviceResponse.ok || !healthResponse.ok) {
       throw new Error("Target-specific verification read failed.");
     }
-    const service = await serviceResponse.json() as {
+    const service = await boundedJson(serviceResponse) as {
       trafficStatuses?: { revision?: string; percent?: number }[];
     };
-    const health = await healthResponse.json() as {
+    const health = await boundedJson(healthResponse, 8_000) as {
       value?: number;
       observedAt?: number;
     };

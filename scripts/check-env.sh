@@ -27,7 +27,28 @@ fi
 if [ ! -f .env ]; then
   fail ".env is missing. Run: cp .env.example .env   then choose MODEL_PROVIDER and fill in its API key."
 else
-  set -a; . ./.env; set +a
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    case "$line" in ""|\#*) continue ;; esac
+    if [[ ! "$line" =~ ^[A-Z_][A-Z0-9_]*= ]]; then
+      fail ".env contains an invalid line; use strict KEY=VALUE entries only."
+      continue
+    fi
+    key="${line%%=*}"
+    value="${line#*=}"
+    case "$key" in
+      PATH|BASH_ENV|ENV|SHELLOPTS|NODE_OPTIONS|LD_*|DYLD_*|NPM_CONFIG_*)
+        fail ".env may not set process-control variable $key."
+        continue
+        ;;
+    esac
+    case "$value" in
+      \"*\") value="${value:1:${#value}-2}" ;;
+      \'*\') value="${value:1:${#value}-2}" ;;
+    esac
+    printf -v "$key" '%s' "$value"
+    export "$key"
+  done < .env
 fi
 
 # Keep provider/model normalization aligned with agent-core/src/model.ts.

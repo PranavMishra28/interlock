@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -49,6 +49,25 @@ test("voice separately requires an OpenAI credential", () => {
   const result = preflight("OPENROUTER_API_KEY=sk-or-test", ["--voice"]);
   assert.equal(result.status, 1);
   assert.match(result.stdout, /OPENAI_API_KEY.*voice/);
+});
+
+test(".env values are parsed as data, not shell code", () => {
+  const root = mkdtempSync(join(tmpdir(), "agents-env-injection-"));
+  try {
+    const marker = join(root, "executed");
+    const result = preflight(`OPENAI_API_KEY=$(touch ${marker})`);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.equal(existsSync(marker), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects malformed and process-control .env entries", () => {
+  const result = preflight("OPENAI_API_KEY=sk-test\nNODE_OPTIONS=--import=payload\nnot shell");
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /may not set process-control variable NODE_OPTIONS/);
+  assert.match(result.stdout, /strict KEY=VALUE/);
 });
 
 function modelConfig(config: NodeJS.ProcessEnv) {

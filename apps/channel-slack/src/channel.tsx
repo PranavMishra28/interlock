@@ -6,6 +6,7 @@ import { interlockApproval } from "./approval";
 import { deliverAmbientMessage } from "./interlock";
 
 const ambientConfig = {
+  allowedWorkspaceId: required("INTERLOCK_SLACK_WORKSPACE_ID"),
   allowedChannelId: required("INTERLOCK_SLACK_CHANNEL_ID"),
   coordinatorUrl: required("INTERLOCK_COORDINATOR_URL"),
   token: required("INTERLOCK_COORDINATOR_TOKEN"),

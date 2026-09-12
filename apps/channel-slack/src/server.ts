@@ -8,6 +8,14 @@ import { CopilotKitIntelligence, CopilotRuntime } from "@copilotkit/runtime/v2";
 import { createCopilotNodeListener } from "@copilotkit/runtime/v2/node";
 import { channel } from "./channel";
 import { required } from "./env";
+import { reportListenerHeartbeat } from "./interlock";
+
+const heartbeatConfig = {
+  allowedWorkspaceId: required("INTERLOCK_SLACK_WORKSPACE_ID"),
+  allowedChannelId: required("INTERLOCK_SLACK_CHANNEL_ID"),
+  coordinatorUrl: required("INTERLOCK_COORDINATOR_URL"),
+  token: required("INTERLOCK_COORDINATOR_TOKEN"),
+};
 
 const intelligence = new CopilotKitIntelligence({
   apiKey: required("INTELLIGENCE_API_KEY"),
@@ -24,6 +32,7 @@ const runtime = new CopilotRuntime({
 });
 
 let teardown: (() => Promise<void>) | undefined;
+let heartbeatTimer: NodeJS.Timeout | undefined;
 const shutdown = async () => {
   await teardown?.();
   process.exit(0);
@@ -36,6 +45,7 @@ const channels = listener.channels;
 const server = createServer(listener);
 
 teardown = async () => {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
   await channels.stop();
   if (server.listening) server.close();
 };
@@ -57,8 +67,15 @@ if (status.overall !== "online") {
   process.exit(1);
 }
 
+const heartbeat = () => reportListenerHeartbeat(
+  heartbeatConfig,
+  channels.status().overall === "online",
+).catch(() => undefined);
+await heartbeat();
+heartbeatTimer = setInterval(heartbeat, 10_000);
+
 const port = Number(process.env.PORT ?? 3000);
-server.listen(port, () => {
-  console.log(`\n  ✓ Channel "${process.env.CHANNEL_CODE}" online — listening on :${port}`);
+server.listen(port, "127.0.0.1", () => {
+  console.log(`\n  ✓ Channel "${process.env.CHANNEL_CODE}" online — listening on 127.0.0.1:${port}`);
   console.log(`    Invite the bot to a channel (/invite @yourbot), then @-mention it.\n`);
 });

@@ -173,13 +173,16 @@ export async function loadSnapshot(
     if (!response.ok) throw new Error(`Coordinator returned ${response.status}`);
     return { ...(await response.json() as Omit<ControlRoomSnapshot, "source">), source: "coordinator" };
   } catch (error) {
-    const snapshot = syntheticSnapshot(fixture);
     return {
-      ...snapshot,
+      asOf: Date.now(),
+      source: "coordinator",
       coordinator: {
         connected: false,
         reason: error instanceof Error ? error.message : "Coordinator unavailable",
       },
+      listener: { connected: false, reason: "Coordinator unavailable" },
+      workflow: null,
+      samples: [],
     };
   }
 }

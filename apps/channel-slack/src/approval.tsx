@@ -9,8 +9,10 @@ import {
   defineChannelComponent,
 } from "@copilotkit/channels";
 import { z } from "zod";
+import { isAllowedSlackActor } from "./interlock";
 
 export function interlockApproval(config: {
+  allowedWorkspaceId: string;
   coordinatorUrl: string;
   token: string;
 }) {
@@ -38,6 +40,20 @@ export function interlockApproval(config: {
               value={{ workflowId: props.workflowId, revision: props.revision }}
               style="primary"
               onClick={async (ctx) => {
+                if (
+                  !isAllowedSlackActor(
+                    ctx.user?.id,
+                    ctx.actor,
+                    config.allowedWorkspaceId,
+                  )
+                ) {
+                  await ctx.thread.postEphemeral(
+                    ctx.actor,
+                    "Approval rejected because the Slack workspace identity did not match.",
+                    { fallbackToDM: false },
+                  );
+                  return;
+                }
                 const response = await fetch(
                   `${config.coordinatorUrl}/v1/slack/approve`,
                   {
@@ -49,6 +65,7 @@ export function interlockApproval(config: {
                     body: JSON.stringify({
                       workflowId: props.workflowId,
                       revision: props.revision,
+                      workspaceId: config.allowedWorkspaceId,
                       actorId: ctx.actor.id,
                     }),
                     signal: AbortSignal.timeout(2_000),

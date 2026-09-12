@@ -38,11 +38,57 @@ test("loopback coordinator exposes read-only persisted state", async () => {
   }
 });
 
+test("Slack listener status requires a recent exact-workspace heartbeat", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "interlock-heartbeat-"));
+  const store = new InterlockStore(join(dir, "state.db"));
+  let now = 1_000;
+  const server = createCoordinator(store, {
+    ingressToken: "test-token",
+    allowedWorkspaceId: "T1",
+    allowedChannelId: "C1",
+    now: () => now,
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const address = server.address();
+    assert(address && typeof address === "object");
+    const base = `http://127.0.0.1:${address.port}`;
+    const send = (workspaceId: string) => fetch(`${base}/v1/slack/heartbeat`, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer test-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ workspaceId, channelId: "C1", online: true }),
+    });
+    assert.equal((await send("T2")).status, 400);
+    assert.equal((await send("T1")).status, 204);
+    assert.equal(
+      ((await (await fetch(`${base}/v1/snapshot`)).json()) as {
+        listener: { connected: boolean };
+      }).listener.connected,
+      true,
+    );
+    now += 30_001;
+    assert.equal(
+      ((await (await fetch(`${base}/v1/snapshot`)).json()) as {
+        listener: { connected: boolean };
+      }).listener.connected,
+      false,
+    );
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("authenticated Slack ingress accepts one exact-channel delivery", async () => {
   const dir = mkdtempSync(join(tmpdir(), "interlock-ingress-"));
   const store = new InterlockStore(join(dir, "state.db"));
   const server = createCoordinator(store, {
     ingressToken: "test-token",
+    allowedWorkspaceId: "T1",
     allowedChannelId: "C1",
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -54,6 +100,7 @@ test("authenticated Slack ingress accepts one exact-channel delivery", async () 
       deliveryId: "Ev1",
       logicalMessageId: "100",
       revisionId: "100:r1",
+      workspaceId: "T1",
       channelId: "C1",
       threadRef: "100",
       actorId: "U1",
@@ -68,6 +115,14 @@ test("authenticated Slack ingress accepts one exact-channel delivery", async () 
         "content-type": "application/json",
       },
       body: JSON.stringify({ ...source, channelId: "C2" }),
+    })).status, 400);
+    assert.equal((await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer test-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ ...source, workspaceId: "T2" }),
     })).status, 400);
     assert.equal((await fetch(url, {
       method: "POST",
@@ -110,6 +165,7 @@ test("Slack approval endpoint delegates exact actor and revision authority", asy
   }, now);
   const server = createCoordinator(store, {
     ingressToken: "test-token",
+    allowedWorkspaceId: "T1",
     allowedChannelId: "C1",
     workflowCoordinator,
   });
@@ -124,8 +180,26 @@ test("Slack approval endpoint delegates exact actor and revision authority", asy
         authorization: "Bearer test-token",
         "content-type": "application/json",
       },
-      body: JSON.stringify({ workflowId: "hold-42", actorId, revision }),
+      body: JSON.stringify({
+        workflowId: "hold-42",
+        workspaceId: "T1",
+        actorId,
+        revision,
+      }),
     });
+    assert.equal((await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer test-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        workflowId: "hold-42",
+        workspaceId: "T2",
+        actorId: "U-OWNER",
+        revision: 2,
+      }),
+    })).status, 400);
     assert.equal((await send("U-JUNIOR")).status, 403);
     assert.equal((await send("U-OWNER", 1)).status, 403);
     assert.equal((await send("U-OWNER")).status, 200);

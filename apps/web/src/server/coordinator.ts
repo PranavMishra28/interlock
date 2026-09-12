@@ -8,8 +8,10 @@ import { InterlockCoordinator } from "./interlock-coordinator";
 
 type CoordinatorOptions = {
   ingressToken?: string;
+  allowedWorkspaceId?: string;
   allowedChannelId?: string;
   workflowCoordinator?: InterlockCoordinator;
+  now?: () => number;
 };
 
 function sameSecret(actual: string, expected: string) {
@@ -25,6 +27,7 @@ function isSourceMessage(value: unknown): value is SourceMessage {
     "deliveryId",
     "logicalMessageId",
     "revisionId",
+    "workspaceId",
     "channelId",
     "threadRef",
     "actorId",
@@ -37,7 +40,7 @@ async function readJson(request: IncomingMessage) {
   let body = "";
   for await (const chunk of request) {
     body += chunk;
-    if (body.length > 16_000) throw new Error("request_too_large");
+    if (Buffer.byteLength(body) > 16_000) throw new Error("request_too_large");
   }
   return JSON.parse(body) as unknown;
 }
@@ -46,18 +49,40 @@ export function createCoordinator(
   store: InterlockStore,
   options: CoordinatorOptions = {},
 ): Server {
+  const now = options.now ?? Date.now;
+  let listenerLastSeenAt: number | undefined;
+  let listenerReportedOffline = false;
   return createServer(async (request, response) => {
     if (request.method === "GET" && request.url === "/v1/snapshot") {
       const workflow = store.list()[0] ?? null;
+      const heartbeatAge = listenerLastSeenAt == null
+        ? undefined
+        : now() - listenerLastSeenAt;
+      const listenerConfigured = Boolean(
+        options.ingressToken &&
+        options.allowedWorkspaceId &&
+        options.allowedChannelId,
+      );
       response.writeHead(200, {
         "cache-control": "no-store",
         "content-type": "application/json",
       });
       response.end(
         JSON.stringify({
-          asOf: Date.now(),
+          asOf: now(),
           coordinator: { connected: true },
-          listener: { connected: false, reason: "Slack access not configured" },
+          listener: heartbeatAge != null && heartbeatAge <= 30_000
+            ? { connected: true, lastSeenAt: listenerLastSeenAt }
+            : {
+                connected: false,
+                reason: listenerConfigured
+                  ? listenerReportedOffline
+                    ? "Slack listener reported offline"
+                    : heartbeatAge == null
+                    ? "No Slack listener heartbeat received"
+                    : "Slack listener heartbeat is stale"
+                  : "Slack access not configured",
+              },
           workflow,
           samples: workflow ? store.samples(workflow.contract.id) : [],
         }),
@@ -67,8 +92,40 @@ export function createCoordinator(
 
     if (
       request.method === "POST" &&
+      request.url === "/v1/slack/heartbeat" &&
+      options.ingressToken &&
+      options.allowedWorkspaceId &&
+      options.allowedChannelId
+    ) {
+      const token = request.headers.authorization?.replace(/^Bearer /, "") ?? "";
+      if (!sameSecret(token, options.ingressToken)) {
+        response.writeHead(401).end();
+        return;
+      }
+      try {
+        const input = await readJson(request) as Record<string, unknown>;
+        if (
+          input.workspaceId !== options.allowedWorkspaceId ||
+          input.channelId !== options.allowedChannelId ||
+          typeof input.online !== "boolean"
+        ) {
+          response.writeHead(400).end();
+          return;
+        }
+        listenerReportedOffline = !input.online;
+        listenerLastSeenAt = input.online ? now() : undefined;
+        response.writeHead(204).end();
+      } catch {
+        response.writeHead(400).end();
+      }
+      return;
+    }
+
+    if (
+      request.method === "POST" &&
       request.url === "/v1/slack/events" &&
       options.ingressToken &&
+      options.allowedWorkspaceId &&
       options.allowedChannelId
     ) {
       const token = request.headers.authorization?.replace(/^Bearer /, "") ?? "";
@@ -78,7 +135,11 @@ export function createCoordinator(
       }
       try {
         const message = await readJson(request);
-        if (!isSourceMessage(message) || message.channelId !== options.allowedChannelId) {
+        if (
+          !isSourceMessage(message) ||
+          message.workspaceId !== options.allowedWorkspaceId ||
+          message.channelId !== options.allowedChannelId
+        ) {
           response.writeHead(400).end();
           return;
         }
@@ -95,6 +156,7 @@ export function createCoordinator(
       request.method === "POST" &&
       request.url === "/v1/slack/approve" &&
       options.ingressToken &&
+      options.allowedWorkspaceId &&
       options.workflowCoordinator
     ) {
       const token = request.headers.authorization?.replace(/^Bearer /, "") ?? "";
@@ -107,6 +169,7 @@ export function createCoordinator(
         if (
           typeof input.workflowId !== "string" ||
           typeof input.actorId !== "string" ||
+          input.workspaceId !== options.allowedWorkspaceId ||
           typeof input.revision !== "number"
         ) {
           response.writeHead(400).end();
@@ -154,6 +217,7 @@ function start() {
       : undefined;
   const server = createCoordinator(store, {
     ingressToken: process.env.INTERLOCK_COORDINATOR_TOKEN,
+    allowedWorkspaceId: process.env.INTERLOCK_SLACK_WORKSPACE_ID,
     allowedChannelId: process.env.INTERLOCK_SLACK_CHANNEL_ID,
     workflowCoordinator,
   });

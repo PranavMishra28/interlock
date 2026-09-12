@@ -47,6 +47,7 @@ export class InterlockStore {
         logical_id TEXT PRIMARY KEY,
         revision_id TEXT NOT NULL UNIQUE,
         delivery_id TEXT NOT NULL UNIQUE,
+        workspace_id TEXT NOT NULL,
         channel_id TEXT NOT NULL,
         thread_ref TEXT NOT NULL,
         actor_id TEXT NOT NULL,
@@ -55,6 +56,14 @@ export class InterlockStore {
         received_at INTEGER NOT NULL
       ) STRICT;
     `);
+    const sourceColumns = this.database
+      .prepare("PRAGMA table_info(source_messages)")
+      .all() as { name: string }[];
+    if (!sourceColumns.some(({ name }) => name === "workspace_id")) {
+      this.database.exec(
+        "ALTER TABLE source_messages ADD COLUMN workspace_id TEXT NOT NULL DEFAULT ''",
+      );
+    }
     this.recover(Date.now());
   }
 
@@ -157,12 +166,13 @@ export class InterlockStore {
     const result = this.database
       .prepare(`
         INSERT INTO source_messages (
-          logical_id, revision_id, delivery_id, channel_id, thread_ref,
-          actor_id, text, updated, received_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          logical_id, revision_id, delivery_id, workspace_id, channel_id,
+          thread_ref, actor_id, text, updated, received_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(logical_id) DO UPDATE SET
           revision_id = excluded.revision_id,
           delivery_id = excluded.delivery_id,
+          workspace_id = excluded.workspace_id,
           actor_id = excluded.actor_id,
           text = excluded.text,
           updated = excluded.updated,
@@ -173,6 +183,7 @@ export class InterlockStore {
         message.logicalMessageId,
         message.revisionId,
         message.deliveryId,
+        message.workspaceId,
         message.channelId,
         message.threadRef,
         message.actorId,
@@ -188,7 +199,8 @@ export class InterlockStore {
       this.database
         .prepare(`
           SELECT delivery_id AS deliveryId, logical_id AS logicalMessageId,
-            revision_id AS revisionId, channel_id AS channelId,
+            revision_id AS revisionId, workspace_id AS workspaceId,
+            channel_id AS channelId,
             thread_ref AS threadRef, actor_id AS actorId, text,
             updated
           FROM source_messages

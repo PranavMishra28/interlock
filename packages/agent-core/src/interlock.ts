@@ -18,6 +18,7 @@ export type SourceMessage = {
   deliveryId: string;
   logicalMessageId: string;
   revisionId: string;
+  workspaceId: string;
   channelId: string;
   threadRef: string;
   actorId: string;

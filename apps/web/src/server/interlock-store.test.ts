@@ -53,6 +53,7 @@ test("bounded source context deduplicates delivery and preserves edits", () => {
     deliveryId: "Ev1",
     logicalMessageId: "100",
     revisionId: "100:r1",
+    workspaceId: "T1",
     channelId: "C1",
     threadRef: "100",
     actorId: "U1",

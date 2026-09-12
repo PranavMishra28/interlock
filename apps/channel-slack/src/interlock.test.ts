@@ -22,7 +22,7 @@ function message(overrides: Partial<ChannelMessage> = {}): ChannelMessage {
 }
 
 test("brand-new unmentioned top-level message and reply are accepted", () => {
-  const top = ambientSourceMessage(message(), "C1::100", "C1");
+  const top = ambientSourceMessage(message(), "C1::100", "T1", "C1");
   const reply = ambientSourceMessage(
     message({
       deliveryId: "Ev2",
@@ -34,24 +34,28 @@ test("brand-new unmentioned top-level message and reply are accepted", () => {
       },
     }),
     "C1::100",
+    "T1",
     "C1",
   );
   assert.equal(top?.threadRef, "100");
+  assert.equal(top?.workspaceId, "T1");
   assert.equal(top?.deliveryId, "Ev1");
   assert.equal(reply?.threadRef, "100");
   assert.equal(reply?.logicalMessageId, "101");
 });
 
 test("channel, actor, bot, deletion, and edit provenance fail closed", () => {
-  assert.equal(ambientSourceMessage(message(), "C2::100", "C1"), null);
+  assert.equal(ambientSourceMessage(message(), "C2::100", "T1", "C1"), null);
+  assert.equal(ambientSourceMessage(message(), "C1::100", "T2", "C1"), null);
   assert.equal(
-    ambientSourceMessage(message({ actor: { id: "B1", kind: "bot" } }), "C1::100", "C1"),
+    ambientSourceMessage(message({ actor: { id: "B1", kind: "bot" } }), "C1::100", "T1", "C1"),
     null,
   );
   assert.equal(
     ambientSourceMessage(
       message({ operation: { kind: "deleted", logicalMessageId: "100", revisionId: "100:r2", mentioned: false } }),
       "C1::100",
+      "T1",
       "C1",
     ),
     null,
@@ -59,6 +63,7 @@ test("channel, actor, bot, deletion, and edit provenance fail closed", () => {
   const edit = ambientSourceMessage(
     message({ operation: { kind: "updated", logicalMessageId: "100", revisionId: "100:r2", mentioned: false } }),
     "C1::100",
+    "T1",
     "C1",
   );
   assert.equal(edit?.updated, true);
