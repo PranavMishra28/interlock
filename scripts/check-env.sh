@@ -208,8 +208,8 @@ fi
 
 # ── deps ─────────────────────────────────────────────────────────────────────
 [ -d node_modules ] && [ ! -d node_modules/@copilotkit/channels ] && \
-  fail "Dependencies look incomplete (@copilotkit/channels is missing). Run: npm install"
-[ ! -d node_modules ] && fail "Dependencies are not installed. Run: npm install"
+  fail "Dependencies look incomplete (@copilotkit/channels is missing). Run: npm ci --no-audit --no-fund"
+[ ! -d node_modules ] && fail "Dependencies are not installed. Run: npm ci --no-audit --no-fund"
 
 # ── report ───────────────────────────────────────────────────────────────────
 if [ ${#warnings[@]} -gt 0 ]; then
@@ -220,7 +220,7 @@ fi
 if [ ${#errors[@]} -gt 0 ]; then
   printf '\n%sPre-flight failed — %d thing(s) to fix%s\n\n' "$RED" "${#errors[@]}" "$OFF"
   for i in "${!errors[@]}"; do printf '  %s%d.%s %s\n' "$RED" "$((i+1))" "$OFF" "${errors[$i]}"; done
-  printf '\n  %sMore detail: dev-docs/troubleshooting.md%s\n\n' "$DIM" "$OFF"
+  printf '\n  %sOperator steps: docs/RUNBOOK.md%s\n\n' "$DIM" "$OFF"
   exit 1
 fi
 

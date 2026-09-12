@@ -327,7 +327,7 @@ Start terminal A, then B, then C:
 ```bash
 INTERLOCK_DB_PATH=.interlock/walkthrough.db npm run coordinator --workspace web
 npm run dev:slack
-npm run dev:web
+INTERLOCK_COORDINATOR_URL=http://127.0.0.1:4317 npm run dev:web
 ```
 
 Expected: all listeners bind loopback, the Slack Channel is online, and the

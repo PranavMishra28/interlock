@@ -2,26 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   emptyState,
-  fixtureStates,
   healthChartDomain,
   healthChartX,
   healthChartY,
   lifecycleNext,
   lifecycleReached,
   loadSnapshot,
-  syntheticSnapshot,
 } from "./control-room";
-
-test("synthetic Control Room state is explicit and fail-closed", () => {
-  const snapshot = syntheticSnapshot();
-  assert.equal(snapshot.source, "synthetic");
-  assert.equal(snapshot.listener.connected, false);
-  assert.equal(snapshot.workflow?.contract.candidateRevision, "v42");
-  assert.equal(snapshot.workflow?.status, "OBSERVING");
-  assert.equal(snapshot.workflow?.receipt, undefined);
-  assert.equal(snapshot.samples.some(({ value }) => value > 1), true);
-  assert.equal(snapshot.workflow?.observation?.resets.at(-1)?.reason, "unhealthy");
-});
 
 test("health chart places the real threshold and clamps out-of-range values", () => {
   const domain = healthChartDomain(5, [{ value: 0.5 }, { value: 99 }]);
@@ -37,27 +24,6 @@ test("health chart preserves timestamp gaps and the single-point fallback", () =
   assert.equal(healthChartX(15, 0, 60), 172);
   assert.equal(healthChartX(60, 0, 60), 616);
   assert.equal(healthChartX(15, 15, 15), 320);
-});
-
-test("required Control Room fixtures stay explicit and non-authoritative", () => {
-  for (const state of fixtureStates) {
-    assert.equal(syntheticSnapshot(state).source, "synthetic");
-  }
-  assert.equal(syntheticSnapshot("empty").workflow, null);
-  assert.equal(syntheticSnapshot("awaiting-owner").workflow?.status, "PROPOSED");
-  const coordinatorOffline = syntheticSnapshot("coordinator-offline");
-  assert.equal(coordinatorOffline.coordinator.connected, false);
-  assert.equal(coordinatorOffline.workflow, null);
-  assert.deepEqual(coordinatorOffline.samples, []);
-  assert.equal(syntheticSnapshot("stale").workflow?.observation?.resets.at(-1)?.reason, "stale");
-  assert.equal(syntheticSnapshot("gap").workflow?.observation?.resets.at(-1)?.reason, "gap");
-  assert.match(syntheticSnapshot("unauthorized").notice ?? "", /rejected/);
-  assert.equal(syntheticSnapshot("intervention").workflow?.status, "NEEDS_INTERVENTION");
-  assert.equal(
-    syntheticSnapshot("intervention").workflow?.verification?.observedRevision,
-    "v41",
-  );
-  assert.equal(syntheticSnapshot("retired").workflow?.receipt?.observedRevision, "v42");
 });
 
 test("READY lifecycle advances to the Claim step", () => {
@@ -90,10 +56,16 @@ test("invalid coordinator JSON fails closed while unknown source stays coordinat
   const priorFetch = globalThis.fetch;
   process.env.INTERLOCK_COORDINATOR_URL = "http://127.0.0.1:4317";
   try {
-    const valid = syntheticSnapshot();
+    const valid = {
+      asOf: Date.now(),
+      source: "unknown",
+      coordinator: { connected: true },
+      listener: { connected: false },
+      workflow: null,
+      samples: [],
+    };
     globalThis.fetch = (async () => new Response(JSON.stringify({
       ...valid,
-      source: "unknown",
     }))) as typeof fetch;
     assert.equal((await loadSnapshot()).source, "coordinator");
 
@@ -109,6 +81,20 @@ test("invalid coordinator JSON fails closed while unknown source stays coordinat
     globalThis.fetch = priorFetch;
     if (priorUrl == null) delete process.env.INTERLOCK_COORDINATOR_URL;
     else process.env.INTERLOCK_COORDINATOR_URL = priorUrl;
+  }
+});
+
+test("an unconfigured coordinator never falls back to fixture data", async () => {
+  const previous = process.env.INTERLOCK_COORDINATOR_URL;
+  delete process.env.INTERLOCK_COORDINATOR_URL;
+  try {
+    const snapshot = await loadSnapshot();
+    assert.equal(snapshot.source, "coordinator-error");
+    assert.equal(snapshot.coordinator.connected, false);
+    assert.equal(snapshot.workflow, null);
+    assert.match(snapshot.coordinator.reason ?? "", /not configured/);
+  } finally {
+    if (previous !== undefined) process.env.INTERLOCK_COORDINATOR_URL = previous;
   }
 });
 

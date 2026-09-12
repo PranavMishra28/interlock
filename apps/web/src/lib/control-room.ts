@@ -1,10 +1,4 @@
-import {
-  approve,
-  createWorkflow,
-  observe,
-  type Workflow,
-  type WorkflowStatus,
-} from "agent-core/interlock";
+import type { Workflow, WorkflowStatus } from "agent-core/interlock";
 
 export type ControlRoomSnapshot = {
   asOf: number;
@@ -15,29 +9,6 @@ export type ControlRoomSnapshot = {
   samples: { observedAt: number; value: number }[];
   notice?: string;
 };
-
-export type FixtureState =
-  | "observing"
-  | "empty"
-  | "awaiting-owner"
-  | "coordinator-offline"
-  | "stale"
-  | "gap"
-  | "unauthorized"
-  | "intervention"
-  | "retired";
-
-export const fixtureStates: FixtureState[] = [
-  "observing",
-  "empty",
-  "awaiting-owner",
-  "coordinator-offline",
-  "stale",
-  "gap",
-  "unauthorized",
-  "intervention",
-  "retired",
-];
 
 export function healthChartDomain(
   threshold: number,
@@ -101,137 +72,6 @@ export function emptyState(coordinator: { connected: boolean; reason?: string })
       "is not evidence that none exists." +
       (coordinator.reason ? ` Reported: ${coordinator.reason}.` : ""),
   };
-}
-
-export function syntheticSnapshot(
-  fixture: FixtureState = "observing",
-): ControlRoomSnapshot {
-  const base = Date.UTC(2026, 8, 12, 17, 25);
-  const trusted = {
-    resourceId: "checkout",
-    targetUrl: "https://checkout.example.test/health",
-    candidateRevision: "v42",
-    ownerId: "U-OWNER",
-  };
-  let workflow = createWorkflow(
-    {
-      id: "hold-42",
-      revision: 3,
-      sourceDeliveryId: "synthetic-delivery-1",
-      sourceMessageRef: "#inc-checkout · 10:24:12",
-      ...trusted,
-      threshold: 1,
-      windowMs: 60_000,
-      maxSampleAgeMs: 15_000,
-      maxSampleGapMs: 20_000,
-      proposalExpiresAt: base + 300_000,
-    },
-    trusted,
-  );
-  workflow = approve(workflow, "U-OWNER", 3, base + 1_000);
-  const samples = [
-    { observedAt: base + 10_000, value: 1.8 },
-    { observedAt: base + 25_000, value: 0.82 },
-    { observedAt: base + 40_000, value: 0.71 },
-    { observedAt: base + 55_000, value: 0.64 },
-  ];
-  for (const sample of samples) {
-    workflow = observe(workflow, sample.value, sample.observedAt, sample.observedAt + 1_000);
-  }
-  const snapshot: ControlRoomSnapshot = {
-    asOf: base + 56_000,
-    source: "synthetic",
-    coordinator: { connected: true, reason: "Fixture preview" },
-    listener: { connected: false, reason: "Slack access not configured" },
-    workflow,
-    samples,
-  };
-  if (fixture === "empty") return { ...snapshot, workflow: null, samples: [] };
-  if (fixture === "awaiting-owner") {
-    return {
-      ...snapshot,
-      workflow: createWorkflow(workflow.contract, trusted),
-      samples: [],
-    };
-  }
-  if (fixture === "coordinator-offline") {
-    return {
-      ...snapshot,
-      coordinator: { connected: false, reason: "Connection refused" },
-      workflow: null,
-      samples: [],
-    };
-  }
-  if (fixture === "stale" || fixture === "gap") {
-    return {
-      ...snapshot,
-      workflow: {
-        ...workflow,
-        status: "ACTIVE_HOLD",
-        observation: {
-          ...workflow.observation!,
-          windowStartedAt: null,
-          resets: [
-            ...workflow.observation!.resets,
-            { at: base + 56_000, reason: fixture },
-          ],
-        },
-      },
-    };
-  }
-  if (fixture === "unauthorized") {
-    return {
-      ...snapshot,
-      workflow: createWorkflow(workflow.contract, trusted),
-      samples: [],
-      notice: "Unauthorized interaction rejected. Awaiting the configured owner.",
-    };
-  }
-  if (fixture === "intervention") {
-    return {
-      ...snapshot,
-      workflow: {
-        ...workflow,
-        status: "NEEDS_INTERVENTION",
-        operation: {
-          id: "op-mismatch-42",
-          claimedAt: base + 56_000,
-          uncertain: false,
-        },
-        verification: {
-          observedRevision: "v41",
-          trafficPercent: 100,
-          healthValue: 0.42,
-          observedAt: base + 56_000,
-          verifiedAt: base + 57_000,
-        },
-      },
-      notice: "Verification mismatch: expected v42; observed v41.",
-    };
-  }
-  if (fixture === "retired") {
-    return {
-      ...snapshot,
-      workflow: {
-        ...workflow,
-        status: "RETIRED",
-        operation: {
-          id: "op-42",
-          claimedAt: base + 56_000,
-          uncertain: false,
-        },
-        receipt: {
-          operationId: "op-42",
-          expectedRevision: "v42",
-          observedRevision: "v42",
-          trafficPercent: 100,
-          healthValue: 0.42,
-          verifiedAt: base + 58_000,
-        },
-      },
-    };
-  }
-  return snapshot;
 }
 
 const workflowStatuses = new Set<WorkflowStatus>([
@@ -331,11 +171,13 @@ function coordinatorFailure(error: unknown): ControlRoomSnapshot {
   };
 }
 
-export async function loadSnapshot(
-  fixture: FixtureState = "observing",
-): Promise<ControlRoomSnapshot> {
+export async function loadSnapshot(): Promise<ControlRoomSnapshot> {
   const url = process.env.INTERLOCK_COORDINATOR_URL;
-  if (!url) return syntheticSnapshot(fixture);
+  if (!url) {
+    return coordinatorFailure(
+      new Error("INTERLOCK_COORDINATOR_URL is not configured"),
+    );
+  }
   try {
     const response = await fetch(`${url}/v1/snapshot`, {
       cache: "no-store",
