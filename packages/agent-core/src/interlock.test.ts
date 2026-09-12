@@ -6,6 +6,7 @@ import {
   claim,
   createWorkflow,
   markDispatchUncertain,
+  MAX_CLOCK_SKEW_MS,
   observe,
   promotionAllowed,
   resetObservation,
@@ -73,6 +74,20 @@ test("fresh elapsed evidence resets on unhealthy, stale, gap, clock, and restart
   assert.equal(state.status, "READY");
 });
 
+test("ordinary clock skew holds the window; a wrong clock resets it", () => {
+  let state = approve(createWorkflow(contract, trusted), "U-OWNER", 3, 100);
+
+  // The target stamps each sample from its own clock, which runs slightly ahead
+  // of the coordinator's. That must not be read as an untrustworthy clock.
+  state = observe(state, 0.4, 300, 200);
+  assert.equal(state.status, "OBSERVING");
+  assert.deepEqual(state.observation?.resets, []);
+
+  state = observe(state, 0.4, 700 + MAX_CLOCK_SKEW_MS + 1, 700);
+  assert.equal(state.status, "ACTIVE_HOLD");
+  assert.equal(state.observation?.resets.at(-1)?.reason, "clock");
+});
+
 test("claim is single-use, revalidates trust, and verifies the exact target", () => {
   let state = approve(createWorkflow(contract, trusted), "U-OWNER", 3, 100);
   state = observe(state, 0.3, 1_000, 1_010);
@@ -98,11 +113,23 @@ test("claim is single-use, revalidates trust, and verifies the exact target", ()
     { revision: "v42", trafficPercent: 100, healthValue: 0.2, observedAt: 2_035 },
     2_040,
   ).status, "RETIRED");
+  // A read-back from a clock that is wrong beyond the calibration allowance is
+  // refused, while ordinary NTP skew between two correct clocks is accepted.
   assert.equal(verify(
     dispatching,
-    { revision: "v42", trafficPercent: 100, healthValue: 0.2, observedAt: 2_050 },
+    {
+      revision: "v42",
+      trafficPercent: 100,
+      healthValue: 0.2,
+      observedAt: 2_041 + MAX_CLOCK_SKEW_MS,
+    },
     2_040,
   ).status, "NEEDS_INTERVENTION");
+  assert.equal(verify(
+    dispatching,
+    { revision: "v42", trafficPercent: 100, healthValue: 0.2, observedAt: 2_140 },
+    2_040,
+  ).status, "RETIRED");
 
   const retired = verify(
     dispatching,
