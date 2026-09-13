@@ -164,7 +164,10 @@ export function createCoordinator(
         }
         const created = store.ingestSource(message);
         response.writeHead(created ? 201 : 200, { "content-type": "application/json" });
-        response.end(JSON.stringify({ accepted: created }));
+        response.end(JSON.stringify({
+          accepted: created,
+          context: store.sourceContext(message.threadRef),
+        }));
       } catch {
         response.writeHead(400).end();
       }

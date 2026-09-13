@@ -8,6 +8,9 @@ import {
   lifecycleReached,
   loadSnapshot,
 } from "@/lib/control-room";
+import { AutoRefresh } from "./auto-refresh";
+
+export const dynamic = "force-dynamic";
 
 const lifecycle = [
   "Source",
@@ -55,6 +58,7 @@ export default async function Home() {
 
   return (
     <main className="cr-shell">
+      <AutoRefresh />
       <header className="cr-header">
         <div>
           <p className="ck-eyebrow">Operational constraint · Checkout</p>

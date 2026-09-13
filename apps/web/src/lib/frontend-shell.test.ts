@@ -8,9 +8,11 @@ test("frontend shell keeps its security and loading contracts", async () => {
     securityHeaders.map(({ key, value }) => [key, value]),
   );
   const rules = await nextConfig.headers!();
-  const [loading, css] = await Promise.all([
+  const [loading, css, refresh, page] = await Promise.all([
     readFile(new URL("../app/loading.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/auto-refresh.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.equal(rules[0]?.source, "/:path*");
@@ -25,4 +27,7 @@ test("frontend shell keeps its security and loading contracts", async () => {
   assert.match(css, /--font-mono: ui-monospace/);
   assert.match(css, /font-variant-numeric: tabular-nums/);
   assert.match(css, /\.cr-loading-grid \.cr-card \{\s+min-height:/);
+  assert.match(refresh, /router\.refresh\(\)/);
+  assert.doesNotMatch(refresh, /location\.reload|httpEquiv/);
+  assert.match(page, /dynamic = "force-dynamic"/);
 });

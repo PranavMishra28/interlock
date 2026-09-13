@@ -420,14 +420,34 @@ before compaction.
   Targeted checks: 28 channel-slack tests, 11 agent-core tests, both typechecks
   clean. The live column still stays unverified: no proposal card has been
   posted and no approval has been exercised end to end.
+- Interactive live-path verification 2026-09-12: the earlier real unmentioned
+  human `#incidents` message established Socket Mode delivery. On the repaired
+  tree, a fresh attributed two-message envelope then exercised the remaining
+  live path with the real model, coordinator, Slack APIs, and Cloud Run:
+  irrelevant context abstained; the explicit decision proposed revision
+  `3290452699`; Slack posted a card tagging the configured owner; owner approval
+  succeeded; `chat.update` replaced the button with a visible approved/observing
+  acknowledgment; the Control Room showed `OBSERVING` at health 0.1 and then
+  background-refreshed to `RETIRED`; the receipt bound expected and observed
+  `checkout-v42` at 100% traffic and health 0.1. The target was reset to
+  `checkout-v41` at 100% with its fault off for the next recording. This is
+  compositional live evidence, not a claim that a second post-fix human Slack
+  message was sent: the transport and downstream run were verified separately.
+  The direct and managed listeners now supply up to 12 persisted, attributed
+  same-thread messages to Intent. Other humans can contribute context, while
+  only the configured owner can authorize the exact revision. The card labels
+  that explicit action `Yes — approve <revision>`; free-text “yes”, emoji, and
+  reactions remain non-authoritative. The Control Room uses background Router
+  refresh every two seconds; a full-page meta refresh was tested and removed
+  because it visibly flashed the loading skeleton.
 - Remaining blockers: inherited dependency exposure still blocks public
-  hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` because this pass did not
-  post or approve a live Slack decision and therefore did not rehearse the
-  complete Slack-to-receipt flow. The existing bot may still need the one human
-  `/invite @Interlock` action in the configured channel.
-- Exact next action: with the fault already cleared and the listener online,
-  post one unmentioned #incidents message, confirm the log reports
-  `slack events_api → proposed`, and approve the exact-revision card. Do not
+  hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` until one continuous
+  post-fix human Slack message-to-receipt rehearsal is captured; the verified
+  transport and downstream live run are currently compositional evidence.
+- Exact next action: with `checkout-v41` restored at 100%, the fault cleared,
+  and the listener online, post one unmentioned #incidents message, confirm the
+  log reports `slack events_api → proposed`, and click `Yes — approve
+  checkout-v42`. Do not
   @-mention the bot. Do not present
   the managed adapter or the synthetic walkthrough as live Slack evidence.
   Video, social publication, and portal submission remain human-only.

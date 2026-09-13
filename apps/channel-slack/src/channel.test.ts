@@ -69,7 +69,7 @@ test("ambient Channel path runs the agent with validated attributed Intent input
         return undefined;
       },
     } as never,
-  }, config, async () => source);
+  }, config, async () => [source]);
 
   assert.match(prompt, /UNTRUSTED_CONTEXT_JSON/);
   assert.match(prompt, /"deliveryId":"Ev1"/);

@@ -344,13 +344,19 @@ Hold the prepared checkout candidate until health stays at or below 0.5 for 10 c
 ```
 
 Expected: one attributed proposal appears for the configured resource and exact
-candidate revision. A wrong or duplicate proposal, bot loop, invented value, or
-missing proposal is a failed run. The configured owner—and nobody else—clicks
-the exact-revision approval button. An unauthorized actor must remain rejected;
+candidate revision and tags the configured owner. The proposal button reads
+`Yes — approve <exact revision>`. A wrong or duplicate proposal, bot loop,
+invented value, or missing proposal is a failed run. The configured owner—and
+nobody else—clicks it. The card must immediately replace itself with an
+approved/observing acknowledgment; a stale or unauthorized click must post a
+clear rejection instead of failing silently. An unauthorized actor must remain rejected;
 do not use that negative control in the ≤120-second capture unless already
-verified privately. Only the posting human and configured owner need to act
-(they may be the same person); do not emulate additional people or post fake
-conversation.
+verified privately. Ordinary messages from other humans in the same thread are
+retained as bounded attributed context but cannot authorize execution. Only the
+posting human and configured owner need to act (they may be the same person).
+To demonstrate two people honestly, use a second real Slack account; never make
+the bot impersonate a human. A free-text `yes`, emoji, or reaction is context,
+not authority—the revision-bound button is the owner's explicit yes.
 
 While the target is still unhealthy, run:
 

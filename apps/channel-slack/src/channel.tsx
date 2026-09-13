@@ -60,19 +60,20 @@ export async function routeAmbientMessage(
   config: AmbientConfig,
   ingress = deliverAmbientMessage,
 ) {
-  const source = await ingress(
+  const context = await ingress(
     message,
     thread.conversationKey,
     config,
   );
-  if (!source) return;
+  if (!context) return;
+  const source = context.at(-1)!;
   const intent: IntentInput = {
-    messages: [{
-      deliveryId: source.deliveryId,
-      messageRef: `${source.channelId}:${source.logicalMessageId}`,
-      actorId: source.actorId,
-      text: source.text,
-    }],
+    messages: context.map((item) => ({
+      deliveryId: item.deliveryId,
+      messageRef: `${item.channelId}:${item.logicalMessageId}`,
+      actorId: item.actorId,
+      text: item.text,
+    })),
     resource: {
       resourceId: config.resourceId,
       targetUrl: config.targetUrl,

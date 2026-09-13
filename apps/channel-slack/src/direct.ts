@@ -70,24 +70,45 @@ export async function handleSocketEnvelope(
       body: JSON.stringify(approval),
       signal: AbortSignal.timeout(2_000),
     });
-    return response.ok ? "approved" : "approval_rejected";
+    const approved = response.ok;
+    await request(approved && approval.cardTs
+      ? "https://slack.com/api/chat.update"
+      : "https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${config.botToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        channel: config.allowedChannelId,
+        ...(approved && approval.cardTs
+          ? { ts: approval.cardTs, blocks: [] }
+          : approval.threadRef ? { thread_ts: approval.threadRef } : {}),
+        text: approved
+          ? `✓ <@${approval.actorId}> approved ${approval.candidateRevision}. Interlock is observing the hold — follow it in Control Room.`
+          : `<@${approval.actorId}> approval was not accepted. The card is stale, already used, or you are not the configured owner.`,
+      }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    return approved ? "approved" : "approval_rejected";
   }
 
   const mapped = channelMessageFromSlackEvent(envelope, config.allowedChannelId);
   if (!mapped) return "ignored";
-  const source = await (deps.ingress ?? deliverAmbientMessage)(
+  const context = await (deps.ingress ?? deliverAmbientMessage)(
     mapped.message,
     mapped.conversationKey,
     config,
   );
-  if (!source) return "ignored";
+  if (!context) return "ignored";
+  const source = context.at(-1)!;
   const intent: IntentInput = {
-    messages: [{
-      deliveryId: source.deliveryId,
-      messageRef: `${source.channelId}:${source.logicalMessageId}`,
-      actorId: source.actorId,
-      text: source.text,
-    }],
+    messages: context.map((message) => ({
+      deliveryId: message.deliveryId,
+      messageRef: `${message.channelId}:${message.logicalMessageId}`,
+      actorId: message.actorId,
+      text: message.text,
+    })),
     resource: {
       resourceId: config.resourceId,
       targetUrl: config.targetUrl,
@@ -135,7 +156,7 @@ export async function handleSocketEnvelope(
     body: JSON.stringify({
       channel: config.allowedChannelId,
       thread_ts: source.threadRef,
-      text: `Interlock approval · revision ${card.revision}`,
+      text: `<@${config.ownerId}> approval needed · revision ${card.revision}`,
       blocks: [
         {
           type: "header",
@@ -145,7 +166,7 @@ export async function handleSocketEnvelope(
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `*Hold ${card.candidateRevision}* on ${card.resourceId}\n\n${card.condition}`,
+            text: `<@${config.ownerId}> — *Hold ${card.candidateRevision}* on ${card.resourceId}\n\n${card.condition}`,
           },
         },
         {
@@ -154,7 +175,7 @@ export async function handleSocketEnvelope(
             type: "button",
             action_id: "interlock_approve",
             style: "primary",
-            text: { type: "plain_text", text: "Approve exact revision" },
+            text: { type: "plain_text", text: `Yes — approve ${card.candidateRevision}` },
             value: JSON.stringify({
               workflowId: card.workflowId,
               revision: card.revision,

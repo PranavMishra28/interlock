@@ -77,7 +77,9 @@ export async function deliverAmbientMessage(
   if (!response.ok) {
     throw new Error(`Coordinator rejected Slack delivery (${response.status}).`);
   }
-  return response.status === 201 ? source : null;
+  if (response.status !== 201) return null;
+  const body = await response.json() as { context?: SourceMessage[] };
+  return Array.isArray(body.context) && body.context.length ? body.context : [source];
 }
 
 export async function reportListenerHeartbeat(config: {

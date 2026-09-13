@@ -127,14 +127,16 @@ test("authenticated Slack ingress accepts one exact-channel delivery", async () 
       },
       body: JSON.stringify({ ...source, workspaceId: "T2" }),
     })).status, 400);
-    assert.equal((await fetch(url, {
+    const accepted = await fetch(url, {
       method: "POST",
       headers: {
         authorization: "Bearer test-token",
         "content-type": "application/json",
       },
       body: JSON.stringify(source),
-    })).status, 201);
+    });
+    assert.equal(accepted.status, 201);
+    assert.deepEqual((await accepted.json() as { context: unknown[] }).context, [source]);
     assert.equal(store.sourceContext("100").length, 1);
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));

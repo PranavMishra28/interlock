@@ -29,6 +29,7 @@ const source: SourceMessage = {
 
 test("Socket Mode message becomes a coordinator proposal and Slack card", async () => {
   const calls: string[] = [];
+  const prior = { ...source, deliveryId: "Ev0", logicalMessageId: "99.1", actorId: "U-JUNIOR", text: "Checkout is stable now." };
   const result = await handleSocketEnvelope({
     payload: {
       type: "event_callback",
@@ -43,8 +44,11 @@ test("Socket Mode message becomes a coordinator proposal and Slack card", async 
       },
     },
   }, config, {
-    ingress: async () => source,
-    model: async () => ({
+    ingress: async () => [prior, source],
+    model: async (prompt) => {
+      assert.match(prompt, /"actorId":"U-JUNIOR"/);
+      assert.match(prompt, /Checkout is stable now/);
+      return ({
       kind: "proposal",
       resourceId: "checkout",
       targetUrl: config.targetUrl,
@@ -52,7 +56,8 @@ test("Socket Mode message becomes a coordinator proposal and Slack card", async 
       threshold: 0.5,
       windowMs: 10_000,
       sourceDeliveryIds: ["Ev1"],
-    }),
+      });
+    },
     request: async (url, init) => {
       calls.push(`${init?.method} ${url}`);
       if (String(url).endsWith("/v1/slack/proposals")) {
@@ -65,6 +70,8 @@ test("Socket Mode message becomes a coordinator proposal and Slack card", async 
           condition: "Health must remain at or below 0.5 for 10 seconds.",
         }), { status: 201 });
       }
+      assert.match(String(init?.body), /<@U-OWNER>.*Hold checkout-v42/);
+      assert.match(String(init?.body), /Yes — approve checkout-v42/);
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     },
   });
@@ -75,13 +82,16 @@ test("Socket Mode message becomes a coordinator proposal and Slack card", async 
   ]);
 });
 
-test("Socket Mode approval click hits the coordinator", async () => {
+test("Socket Mode approval click hits the coordinator and acknowledges in Slack", async () => {
+  const calls: string[] = [];
   const result = await handleSocketEnvelope({
     payload: {
       type: "block_actions",
       team: { id: "T1" },
       user: { id: "U-OWNER" },
       channel: { id: "C1" },
+      container: { message_ts: "101.1" },
+      message: { thread_ts: "100.1" },
       actions: [{
         action_id: "interlock_approve",
         value: JSON.stringify({
@@ -94,10 +104,18 @@ test("Socket Mode approval click hits the coordinator", async () => {
       }],
     },
   }, config, {
-    request: async (url) => {
-      assert.equal(String(url), "http://127.0.0.1:9/v1/slack/approve");
+    request: async (url, init) => {
+      calls.push(String(url));
+      if (String(url).includes("chat.update")) {
+        assert.match(String(init?.body), /U-OWNER.*approved.*checkout-v42/);
+        assert.match(String(init?.body), /"ts":"101.1"/);
+      }
       return new Response("{}", { status: 200 });
     },
   });
   assert.equal(result, "approved");
+  assert.deepEqual(calls, [
+    "http://127.0.0.1:9/v1/slack/approve",
+    "https://slack.com/api/chat.update",
+  ]);
 });

@@ -86,6 +86,8 @@ test("block action parses the exact-revision approval payload", () => {
       team: { id: "T1" },
       user: { id: "U-OWNER" },
       channel: { id: "C1" },
+      container: { message_ts: "101.1" },
+      message: { thread_ts: "100.1" },
       actions: [{
         action_id: "interlock_approve",
         value: JSON.stringify({
@@ -100,4 +102,6 @@ test("block action parses the exact-revision approval payload", () => {
   });
   assert.equal(click?.actorId, "U-OWNER");
   assert.equal(click?.workflowId, "hold-1");
+  assert.equal(click?.threadRef, "100.1");
+  assert.equal(click?.cardTs, "101.1");
 });

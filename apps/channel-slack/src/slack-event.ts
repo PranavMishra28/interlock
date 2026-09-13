@@ -38,6 +38,8 @@ export type SlackEnvelope = {
     team?: { id?: string };
     user?: { id?: string };
     channel?: { id?: string };
+    container?: { message_ts?: string };
+    message?: { thread_ts?: string };
     actions?: { action_id?: string; value?: string }[];
   };
 };
@@ -111,6 +113,8 @@ export function approvalFromSlackInteraction(envelope: SlackEnvelope) {
       actorId: payload.user?.id ?? "",
       workspaceId: payload.team?.id ?? "",
       channelId: payload.channel?.id ?? "",
+      threadRef: payload.message?.thread_ts ?? payload.container?.message_ts ?? "",
+      cardTs: payload.container?.message_ts ?? "",
     };
   } catch {
     return null;
