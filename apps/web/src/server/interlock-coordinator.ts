@@ -116,7 +116,12 @@ export class InterlockCoordinator {
         workflow.contract.candidateRevision,
         workflow.operation!.id,
       );
-    } catch {
+    } catch (error) {
+      // Read-back still decides the outcome, but an operator staring at
+      // NEEDS_INTERVENTION cannot tell a refused dispatch from a slow one.
+      console.error(
+        `  interlock dispatch failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       workflow = markDispatchUncertain(workflow);
       this.store.save(workflow, now);
       return this.verifyUntilSettled(workflow, adapter);

@@ -440,13 +440,41 @@ before compaction.
   reactions remain non-authoritative. The Control Room uses background Router
   refresh every two seconds; a full-page meta refresh was tested and removed
   because it visibly flashed the loading skeleton.
+- Retired-revision dispatch failure 2026-09-12: a human live run settled at
+  `NEEDS_INTERVENTION` with observed `checkout-v41`. The cause was the live
+  target, not Interlock. Repeated traffic flapping between `checkout-v42` and
+  `checkout-v41` left `checkout-v42` retired; Cloud Run accepted the traffic
+  PATCH and opened an operation, but could not route to a revision reporting
+  `Recreating retired Revision` / `Ready=Unknown`. Traffic moved to
+  `checkout-v42` unaided once the revision finished recreating, so fail-closed
+  refusal and reconciliation behaved as specified. Two findings stand: the
+  scoped `interlock-exec` identity cannot call `run.operations.get`, so every
+  promotion throws `Cloud Run operation read failed (403)` and settles through
+  independent read-back rather than the operation poll; and the dispatch
+  `catch` discarded that message, leaving an operator unable to distinguish a
+  refused dispatch from a slow one. The coordinator now logs the dispatch
+  failure before marking the effect uncertain. Read-back still decides the
+  outcome, so behavior is unchanged. Granting `run.operations.get` remains an
+  unauthorized IAM change and was not made.
+- Live-target pre-flight: before a recording, confirm both the effective
+  traffic revision and that `checkout-v42` reports `Ready=True`. A retired
+  candidate cannot receive traffic no matter how the ambient path behaves, and
+  recreation is not immediate.
+- Intent boundary re-checked against the real model on the current tree:
+  `checkout is looking rough again, anyone else seeing it?` abstained
+  `ambiguous`; `are we still planning to ship the checkout candidate today?`
+  and `if checkout stays unhealthy we should probably hold the rollout`
+  abstained `hypothetical`; only the explicit decision produced a proposal. The
+  second hypothetical is the useful rehearsal opener because it reads like an
+  instruction and is still refused.
 - Remaining blockers: inherited dependency exposure still blocks public
   hosting. RELEASE-1 and DEMO-1 remain `BLOCKED_DEPS` until one continuous
   post-fix human Slack message-to-receipt rehearsal is captured; the verified
   transport and downstream live run are currently compositional evidence.
 - Exact next action: with `checkout-v41` restored at 100%, the fault cleared,
-  and the listener online, post one unmentioned #incidents message, confirm the
-  log reports `slack events_api → proposed`, and click `Yes — approve
+  the candidate confirmed `Ready=True`, and the listener online, post one
+  unmentioned #incidents message, confirm the log reports
+  `slack events_api → proposed`, and click `Yes — approve
   checkout-v42`. Do not
   @-mention the bot. Do not present
   the managed adapter or the synthetic walkthrough as live Slack evidence.
