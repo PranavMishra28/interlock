@@ -36,8 +36,8 @@
     "@ag-ui/client": "0.0.59"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "tsx": "^4.23.1",
+    "@types/node": "^22.20.4",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.0"
   }
 }
